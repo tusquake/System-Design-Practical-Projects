@@ -32,4 +32,10 @@ public class FileController {
     public ResponseEntity<java.util.List<com.example.gcs.model.FileMetadata>> getAllFile() {
         return ResponseEntity.ok(gcsService.getAllFiles());
     }
+
+    @GetMapping("/summary")
+    public ResponseEntity<Map<String, String>> getSummary(@RequestParam String fileName) {
+        String summary = gcsService.getFileSummary(fileName);
+        return ResponseEntity.ok(Map.of("summary", summary));
+    }
 }

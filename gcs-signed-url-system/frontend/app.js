@@ -73,6 +73,19 @@ uploadBtn.onclick = async () => {
     }
 };
 
+// Modal elements
+const modal = document.getElementById('summary-modal');
+const closeModal = document.getElementById('close-modal');
+const summaryText = document.getElementById('summary-text');
+const summaryLoading = document.getElementById('summary-loading');
+
+if (closeModal) {
+    closeModal.onclick = () => modal.style.display = 'none';
+}
+window.onclick = (event) => {
+    if (event.target == modal) modal.style.display = 'none';
+};
+
 /**
  * Fetches all file metadata from the backend and populates the table
  */
@@ -90,18 +103,42 @@ async function loadFiles() {
 
         noFilesMessage.style.display = 'none';
         files.forEach(file => {
+            const isPdf = file.contentType === 'application/pdf';
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><div class="file-name-cell" title="${file.originalFileName}">${file.originalFileName}</div></td>
                 <td><span class="badge">${file.contentType.split('/')[1].toUpperCase()}</span></td>
                 <td>
-                    <button class="btn-small" onclick="viewFile('${file.gcsFileName}')">View</button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn-small" onclick="viewFile('${file.gcsFileName}')">View</button>
+                        ${isPdf ? `<button class="btn-small secondary-btn" onclick="showSummary('${file.gcsFileName}')">Summary</button>` : ''}
+                    </div>
                 </td>
             `;
             fileTableBody.appendChild(row);
         });
     } catch (err) {
         console.error("Failed to load files:", err);
+    }
+}
+
+/**
+ * Fetches AI summary for a PDF and displays it in the modal
+ */
+async function showSummary(gcsFileName) {
+    modal.style.display = 'block';
+    summaryLoading.style.display = 'block';
+    summaryText.innerText = '';
+
+    try {
+        const response = await fetch(`${API_BASE}/summary?fileName=${encodeURIComponent(gcsFileName)}`);
+        const data = await response.json();
+        
+        summaryLoading.style.display = 'none';
+        summaryText.innerText = data.summary;
+    } catch (err) {
+        summaryLoading.style.display = 'none';
+        summaryText.innerText = "Error fetching summary. Make sure the AI processing is complete.";
     }
 }
 

@@ -2,6 +2,7 @@ package com.example.gcs.service;
 
 import com.example.gcs.model.FileMetadata;
 import com.example.gcs.repository.FileMetadataRepository;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.HttpMethod;
@@ -86,5 +87,14 @@ public class GcsService {
 
     public List<FileMetadata> getAllFiles() {
         return metadataRepository.findAll();
+    }
+
+    public String getFileSummary(String fileName) {
+        String summaryPath = "summaries/" + fileName + ".txt";
+        Blob blob = storage.get(bucketName, summaryPath);
+        if (blob == null) {
+            return "Summary not ready yet. Please wait a few seconds...";
+        }
+        return new String(blob.getContent());
     }
 }
