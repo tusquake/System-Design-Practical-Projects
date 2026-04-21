@@ -31,9 +31,14 @@ This project covers the essential building blocks of modern software architectur
 ## Featured Projects
 
 ### [GCS Signed URL System](./gcs-signed-url-system)
-A production-grade implementation of direct-to-cloud file uploads. 
-- **Tech Stack:** Spring Boot, Google Cloud Storage, Vanilla JS.
-- **Key Features:** V4 Signed URLs, CORS configuration, metadata persistence in PostgreSQL.
+A production-grade implementation of direct-to-cloud file uploads with a decoupled metadata service.
+- **Tech Stack:** Spring Boot, Google Cloud Storage, Cloud SQL (PostgreSQL), Vanilla JS.
+- **Key Features:** V4 Signed URLs, CORS configuration, metadata persistence, and cross-origin security.
+
+### [Serverless File Processor](./gcs-file-processor)
+An event-driven enhancement using Google Cloud Functions (the equivalent of AWS Lambda).
+- **Tech Stack:** Python, Google Cloud Functions, Eventarc.
+- **Key Features:** Asynchronous processing triggered by GCS "Object Finalize" events, enabling serverless background tasks like metadata extraction or thumbnail generation without blocking the main application.
 
 ---
 
