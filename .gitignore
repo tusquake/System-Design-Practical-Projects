@@ -1,0 +1,14 @@
+# Google Cloud Credentials
+*.json
+!composer.json
+!package.json
+!tsconfig.json
+
+# IDE
+.idea/
+.vscode/
+
+# Build
+target/
+bin/
+out/

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudStream | Secure GCS Uploader</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CloudStream</h1>
+            <p>Direct-to-Cloud Signed URL Uploader</p>
+        </header>
+
+        <div class="upload-card">
+            <div class="drop-zone" id="drop-zone">
+                <div class="icon">☁️</div>
+                <p>Drag & drop or click to select</p>
+                <input type="file" id="file-input" hidden>
+            </div>
+
+            <div class="file-info" id="file-info" style="display: none;">
+                <div class="file-details">
+                    <span id="file-name-display">filename.jpg</span>
+                    <span id="file-size">0 KB</span>
+                </div>
+                <button id="upload-btn" class="btn primary">Upload to Google Cloud</button>
+            </div>
+
+            <div class="progress-container" id="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="progress-text">0%</span>
+                    <span id="upload-speed">Uploading...</span>
+                </div>
+            </div>
+
+            <div class="result-card" id="result-card" style="display: none;">
+                <div class="success-icon">✓</div>
+                <h3>Upload Successful!</h3>
+                <p>The file is now stored in your GCS bucket.</p>
+                <div class="action-group">
+                    <a href="#" id="download-link" target="_blank" class="btn secondary">View / Download</a>
+                    <button onclick="location.reload()" class="btn text">Upload Another</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
