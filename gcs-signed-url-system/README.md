@@ -137,13 +137,15 @@ This project served as a deep dive into the practicalities of cloud-native devel
 ### 1. Direct-to-Cloud Logic (Signed URLs)
 **Logic:** By offloading the file upload to GCS, we prevent our Spring Boot server from being a bottleneck. The backend acts only as an **authorizer** (generating the URL) and an **auditor** (saving metadata to Cloud SQL).
 
-### 2. Serverless Event-Driven Processing
-**Logic:** We integrated a **Google Cloud Function** (Python) that triggers on every successful upload.
-- **The Workflow:** GCS -> Eventarc -> Cloud Function.
-- **Lesson - IAM Permissions:** We discovered that GCS requires the `roles/pubsub.publisher` role to send events to Eventarc in 2nd Gen functions. Without this, the deployment fails.
+### 2. Serverless AI Data Pipeline (Gemini 2.5 Flash)
+**Logic:** We integrated an asynchronous **AI Summary Service** using Google Cloud Functions and Vertex AI.
+- **The Workflow:** GCS (Upload) -> Eventarc (Trigger) -> Cloud Function (Processing) -> Vertex AI (Gemini 2.5 Flash) -> GCS (Storage).
+- **Lesson - Service Agent Provisioning:** When first connecting Vertex AI to GCS, Google needs a few minutes to provision internal "Service Agents." Attempts during this time will return a `400` error.
+- **Lesson - Resource Allocation:** AI libraries (Vertex AI SDK) and PDF processing are memory-intensive. We had to increase the function RAM from `256MiB` to `512MiB` to prevent `OOM (Out of Memory)` crashes.
+- **Lesson - Model Selection:** We utilized **Gemini 2.5 Flash**, leveraging its high-speed context processing for instant document summarization.
 
 ### 3. Database Migration (Local to Cloud SQL)
-- **The Switch:** We moved from a local PostgreSQL to **Google Cloud SQL**.
+- **The Switch:** We moved from a local PostgreSQL to **Google Cloud SQL** (PostgreSQL).
 - **Connectivity:** Used the `spring-cloud-gcp-starter-sql-postgresql` connector which manages the secure socket connection using the Cloud SQL Auth Proxy logic under the hood.
 
 ### 4. Security & Git Protection
