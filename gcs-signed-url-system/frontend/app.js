@@ -16,6 +16,15 @@ const refreshBtn = document.getElementById('refresh-btn');
 const API_BASE = "http://localhost:8080/files";
 let selectedFile = null;
 
+// Resumable state
+let currentXhr = null;
+let currentSessionUrl = null;
+let currentFileName = null;
+
+const pauseBtn = document.getElementById('pause-btn');
+const resumeBtn = document.getElementById('resume-btn');
+const resumableControls = document.getElementById('resumable-controls');
+
 // Initial load
 document.addEventListener('DOMContentLoaded', loadFiles);
 if (refreshBtn) refreshBtn.onclick = loadFiles;
@@ -40,6 +49,9 @@ uploadBtn.onclick = async () => {
     try {
         fileInfo.style.display = 'none';
         progressContainer.style.display = 'block';
+        resumableControls.style.display = 'flex';
+        resumableControls.style.justifyContent = 'center';
+        resumableControls.style.gap = '10px';
 
         // 1. Get Resumable Initiate URL from Backend
         const response = await fetch(`${API_BASE}/resumable-session?fileName=${encodeURIComponent(selectedFile.name)}&contentType=${encodeURIComponent(selectedFile.type)}`, {
@@ -51,27 +63,24 @@ uploadBtn.onclick = async () => {
             throw new Error(errorData.message || "Failed to initiate resumable session");
         }
         
-        const { initiateUrl, fileName } = await response.json();
+        const data = await response.json();
+        currentFileName = data.fileName;
 
-        // 2. Perform the Resumable Upload Handshake and Data Transfer
-        await uploadToGcsResumable(initiateUrl, selectedFile);
-
-        // 3. Refresh list after upload
-        await loadFiles();
-
-        // 4. Show Success State
-        progressContainer.style.display = 'none';
-        resultCard.style.display = 'block';
+        // 2. Start the resumable session and get Session URI
+        currentSessionUrl = await initiateResumableSession(data.initiateUrl, selectedFile.type);
         
-        // Setup direct download link for the success card
-        const downloadResp = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(fileName)}`);
-        const { downloadUrl } = await downloadResp.json();
-        downloadLink.href = downloadUrl;
+        // 3. Start the actual data transfer
+        await uploadBytes(0);
+
+        // 4. Cleanup and Success
+        finalizeUpload(currentFileName);
 
     } catch (err) {
-        console.error("Upload process failed:", err);
-        alert("Upload Failed: " + err.message);
-        location.reload();
+        if (err.message !== "UPLOAD_PAUSED") {
+            console.error("Upload process failed:", err);
+            alert("Upload Failed: " + err.message);
+            location.reload();
+        }
     }
 };
 
@@ -158,49 +167,127 @@ async function viewFile(gcsFileName) {
 }
 
 /**
- * Performs a 2-step Resumable Upload to GCS
+ * Step 1: Initiate the session and return the Location header
  */
-function uploadToGcsResumable(initiateUrl, file) {
+function initiateResumableSession(initiateUrl, contentType) {
     return new Promise((resolve, reject) => {
-        // Step 1: POST to the initiation URL to get a Session URI
-        const xhrInit = new XMLHttpRequest();
-        xhrInit.open("POST", initiateUrl);
-        xhrInit.setRequestHeader("x-goog-resumable", "start");
-        xhrInit.setRequestHeader("Content-Type", file.type);
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", initiateUrl);
+        xhr.setRequestHeader("x-goog-resumable", "start");
+        xhr.setRequestHeader("Content-Type", contentType);
 
-        xhrInit.onload = () => {
-            if (xhrInit.status === 200 || xhrInit.status === 201) {
-                // Step 2: The Session URI is in the 'Location' header
-                const sessionUrl = xhrInit.getResponseHeader("Location");
-                
-                const xhrUpload = new XMLHttpRequest();
-                xhrUpload.open("PUT", sessionUrl);
-                
-                xhrUpload.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const percent = Math.round((e.loaded / e.total) * 100);
-                        progressFill.style.width = percent + "%";
-                        progressText.innerText = percent + "%";
-                    }
-                };
-
-                xhrUpload.onload = () => {
-                    if (xhrUpload.status === 200 || xhrUpload.status === 201) {
-                        resolve();
-                    } else {
-                        reject(new Error(`GCS Upload failed with status ${xhrUpload.status}`));
-                    }
-                };
-
-                xhrUpload.onerror = () => reject(new Error("Network error during data transfer"));
-                xhrUpload.send(file);
+        xhr.onload = () => {
+            if (xhr.status === 200 || xhr.status === 201) {
+                resolve(xhr.getResponseHeader("Location"));
             } else {
-                reject(new Error(`Session initiation failed with status ${xhrInit.status}`));
+                reject(new Error("Failed to initiate session"));
+            }
+        };
+        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.send();
+    });
+}
+
+/**
+ * Step 2: Upload bytes from a specific offset
+ */
+function uploadBytes(offset) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        currentXhr = xhr;
+        
+        xhr.open("PUT", currentSessionUrl);
+        // Resumable PUTs require a Content-Range header
+        const contentRange = `bytes ${offset}-${selectedFile.size - 1}/${selectedFile.size}`;
+        xhr.setRequestHeader("Content-Range", contentRange);
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const totalUploaded = offset + e.loaded;
+                const percent = Math.round((totalUploaded / selectedFile.size) * 100);
+                progressFill.style.width = percent + "%";
+                progressText.innerText = percent + "%";
             }
         };
 
-        xhrInit.onerror = () => reject(new Error("Network error during session initiation"));
-        xhrInit.send();
+        xhr.onload = () => {
+            if (xhr.status === 200 || xhr.status === 201) {
+                resolve();
+            } else {
+                reject(new Error(`GCS Upload failed with status ${xhr.status}`));
+            }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during data transfer"));
+        xhr.onabort = () => reject(new Error("UPLOAD_PAUSED"));
+
+        const blob = selectedFile.slice(offset);
+        xhr.send(blob);
+    });
+}
+
+/**
+ * Finalize UI after success
+ */
+async function finalizeUpload(fileName) {
+    await loadFiles();
+    progressContainer.style.display = 'none';
+    resumableControls.style.display = 'none';
+    resultCard.style.display = 'block';
+    
+    const downloadResp = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(fileName)}`);
+    const { downloadUrl } = await downloadResp.json();
+    downloadLink.href = downloadUrl;
+}
+
+// Button controls
+pauseBtn.onclick = () => {
+    if (currentXhr) {
+        currentXhr.abort();
+        pauseBtn.style.display = 'none';
+        resumeBtn.style.display = 'inline-block';
+    }
+};
+
+resumeBtn.onclick = async () => {
+    resumeBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-block';
+    
+    try {
+        const offset = await getUploadOffset();
+        await uploadBytes(offset);
+        finalizeUpload(currentFileName);
+    } catch (err) {
+        if (err.message !== "UPLOAD_PAUSED") alert("Resume failed: " + err.message);
+    }
+};
+
+/**
+ * Queries GCS for the current offset (last byte received)
+ */
+function getUploadOffset() {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", currentSessionUrl);
+        xhr.setRequestHeader("Content-Range", `bytes */${selectedFile.size}`);
+        
+        xhr.onload = () => {
+            if (xhr.status === 308) {
+                const range = xhr.getResponseHeader("Range");
+                if (range) {
+                    const lastByte = parseInt(range.split('-')[1]);
+                    resolve(lastByte + 1);
+                } else {
+                    resolve(0);
+                }
+            } else if (xhr.status === 200 || xhr.status === 201) {
+                resolve(selectedFile.size);
+            } else {
+                reject(new Error("Failed to query offset"));
+            }
+        };
+        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.send();
     });
 }
 
