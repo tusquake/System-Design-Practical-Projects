@@ -41,18 +41,20 @@ uploadBtn.onclick = async () => {
         fileInfo.style.display = 'none';
         progressContainer.style.display = 'block';
 
-        // 1. Get Signed URL from Backend
-        const response = await fetch(`${API_BASE}/upload-url?fileName=${encodeURIComponent(selectedFile.name)}&contentType=${encodeURIComponent(selectedFile.type)}`);
+        // 1. Get Resumable Initiate URL from Backend
+        const response = await fetch(`${API_BASE}/resumable-session?fileName=${encodeURIComponent(selectedFile.name)}&contentType=${encodeURIComponent(selectedFile.type)}`, {
+            method: 'POST'
+        });
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to get signed URL");
+            throw new Error(errorData.message || "Failed to initiate resumable session");
         }
         
-        const { uploadUrl, fileName } = await response.json();
+        const { initiateUrl, fileName } = await response.json();
 
-        // 2. Upload to GCS directly using the signed URL
-        await uploadToGcs(uploadUrl, selectedFile);
+        // 2. Perform the Resumable Upload Handshake and Data Transfer
+        await uploadToGcsResumable(initiateUrl, selectedFile);
 
         // 3. Refresh list after upload
         await loadFiles();
@@ -156,34 +158,49 @@ async function viewFile(gcsFileName) {
 }
 
 /**
- * Performs the actual PUT request to GCS
+ * Performs a 2-step Resumable Upload to GCS
  */
-function uploadToGcs(url, file) {
+function uploadToGcsResumable(initiateUrl, file) {
     return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", url);
-        
-        // This header must match the one used during URL signing in the backend
-        xhr.setRequestHeader("Content-Type", file.type);
+        // Step 1: POST to the initiation URL to get a Session URI
+        const xhrInit = new XMLHttpRequest();
+        xhrInit.open("POST", initiateUrl);
+        xhrInit.setRequestHeader("x-goog-resumable", "start");
+        xhrInit.setRequestHeader("Content-Type", file.type);
 
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 100);
-                progressFill.style.width = percent + "%";
-                progressText.innerText = percent + "%";
-            }
-        };
+        xhrInit.onload = () => {
+            if (xhrInit.status === 200 || xhrInit.status === 201) {
+                // Step 2: The Session URI is in the 'Location' header
+                const sessionUrl = xhrInit.getResponseHeader("Location");
+                
+                const xhrUpload = new XMLHttpRequest();
+                xhrUpload.open("PUT", sessionUrl);
+                
+                xhrUpload.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressFill.style.width = percent + "%";
+                        progressText.innerText = percent + "%";
+                    }
+                };
 
-        xhr.onload = () => {
-            if (xhr.status === 200) {
-                resolve();
+                xhrUpload.onload = () => {
+                    if (xhrUpload.status === 200 || xhrUpload.status === 201) {
+                        resolve();
+                    } else {
+                        reject(new Error(`GCS Upload failed with status ${xhrUpload.status}`));
+                    }
+                };
+
+                xhrUpload.onerror = () => reject(new Error("Network error during data transfer"));
+                xhrUpload.send(file);
             } else {
-                reject(new Error(`GCS returned status ${xhr.status}`));
+                reject(new Error(`Session initiation failed with status ${xhrInit.status}`));
             }
         };
 
-        xhr.onerror = () => reject(new Error("Network connection error during GCS upload"));
-        xhr.send(file);
+        xhrInit.onerror = () => reject(new Error("Network error during session initiation"));
+        xhrInit.send();
     });
 }
 

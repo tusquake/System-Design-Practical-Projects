@@ -38,4 +38,11 @@ public class FileController {
         String summary = gcsService.getFileSummary(fileName);
         return ResponseEntity.ok(Map.of("summary", summary));
     }
+
+    @PostMapping("/resumable-session")
+    public ResponseEntity<Map<String, String>> getResumableSession(
+            @RequestParam String fileName,
+            @RequestParam String contentType) {
+        return ResponseEntity.ok(gcsService.createResumableSession(fileName, contentType));
+    }
 }

@@ -140,6 +140,7 @@ This project served as a deep dive into the practicalities of cloud-native devel
 ### 2. Serverless AI Data Pipeline (Gemini 2.5 Flash)
 **Logic:** We integrated an asynchronous **AI Summary Service** using Google Cloud Functions and Vertex AI.
 - **The Workflow:** GCS (Upload) -> Eventarc (Trigger) -> Cloud Function (Processing) -> Vertex AI (Gemini 2.5 Flash) -> GCS (Storage).
+- **Advanced Feature:** Implemented **[Resumable Uploads](./RESUMABLE_UPLOADS.md)** for high-reliability file ingestion.
 - **Lesson - Service Agent Provisioning:** When first connecting Vertex AI to GCS, Google needs a few minutes to provision internal "Service Agents." Attempts during this time will return a `400` error.
 - **Lesson - Resource Allocation:** AI libraries (Vertex AI SDK) and PDF processing are memory-intensive. We had to increase the function RAM from `256MiB` to `512MiB` to prevent `OOM (Out of Memory)` crashes.
 - **Lesson - Model Selection:** We utilized **Gemini 2.5 Flash**, leveraging its high-speed context processing for instant document summarization.

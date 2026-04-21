@@ -26,7 +26,15 @@
                     <span id="file-name-display">filename.jpg</span>
                     <span id="file-size">0 KB</span>
                 </div>
-                <button id="upload-btn" class="btn primary">Upload to Google Cloud</button>
+                <div class="mode-selector">
+                    <label>
+                        <input type="radio" name="upload-mode" value="standard" checked> Standard
+                    </label>
+                    <label>
+                        <input type="radio" name="upload-mode" value="resumable"> Resumable (Large Files)
+                    </label>
+                </div>
+                <button id="upload-btn" class="btn primary">Start Upload</button>
             </div>
 
             <div class="progress-container" id="progress-container" style="display: none;">

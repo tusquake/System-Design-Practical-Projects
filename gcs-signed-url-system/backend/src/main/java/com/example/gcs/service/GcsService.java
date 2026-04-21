@@ -97,4 +97,39 @@ public class GcsService {
         }
         return new String(blob.getContent());
     }
+
+    /**
+     * Generates a signed POST URL that the client uses to START a resumable session.
+     * The response from GCS will contain a 'Location' header which is the actual Session URL.
+     */
+    public Map<String, String> createResumableSession(String fileName, String contentType) {
+        String uniqueFileName = UUID.randomUUID() + "-" + fileName;
+        BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(bucketName, uniqueFileName))
+                .setContentType(contentType)
+                .build();
+
+        Map<String, String> extensionHeaders = new HashMap<>();
+        extensionHeaders.put("x-goog-resumable", "start");
+        extensionHeaders.put("Content-Type", contentType);
+
+        URL signedUrl = storage.signUrl(blobInfo,
+                expiryMinutes, TimeUnit.MINUTES,
+                Storage.SignUrlOption.httpMethod(HttpMethod.POST),
+                Storage.SignUrlOption.withExtHeaders(extensionHeaders),
+                Storage.SignUrlOption.withV4Signature(),
+                Storage.SignUrlOption.withQueryParams(Map.of("uploadType", "resumable")));
+
+        // Save metadata early (status: PENDING)
+        FileMetadata metadata = FileMetadata.builder()
+                .originalFileName(fileName)
+                .gcsFileName(uniqueFileName)
+                .contentType(contentType)
+                .build();
+        metadataRepository.save(metadata);
+
+        return Map.of(
+                "initiateUrl", signedUrl.toString(),
+                "fileName", uniqueFileName
+        );
+    }
 }

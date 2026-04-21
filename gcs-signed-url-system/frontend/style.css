@@ -17,8 +17,8 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-image: radial-gradient(circle at 20% 20%, #1e1b4b 0%, transparent 40%), 
-                      radial-gradient(circle at 80% 80%, #1e1b4b 0%, transparent 40%);
+    background-image: radial-gradient(circle at 20% 20%, #1e1b4b 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, #1e1b4b 0%, transparent 40%);
 }
 
 .container {
@@ -180,8 +180,37 @@ header p {
     border-radius: 12px;
 }
 
-#file-name-display { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#file-size { font-size: 0.85rem; color: var(--text-muted); }
+#file-name-display {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#file-size {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.mode-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.mode-selector input[type="radio"] {
+    accent-color: var(--primary);
+}
 
 .btn {
     padding: 1rem 1.5rem;
@@ -214,7 +243,9 @@ header p {
     margin-bottom: 0.8rem;
 }
 
-.btn.secondary:hover { background: rgba(255, 255, 255, 0.15); }
+.btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 .btn.text {
     background: transparent;
@@ -222,7 +253,9 @@ header p {
     font-size: 0.9rem;
 }
 
-.btn.text:hover { color: white; }
+.btn.text:hover {
+    color: white;
+}
 
 .progress-bar {
     height: 10px;
@@ -255,8 +288,15 @@ header p {
 }
 
 @keyframes scaleUp {
-    from { transform: scale(0); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .action-group {
@@ -337,8 +377,13 @@ header p {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 #summary-loading {
