@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TinyLink | High-Speed URL Shortener</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">TinyLink</div>
+            <h1>Shorten Your Links</h1>
+            <p>High-performance, low-latency URL redirection powered by Redis.</p>
+        </header>
+
+        <main>
+            <div class="input-card">
+                <div class="input-group">
+                    <input type="url" id="long-url" placeholder="Paste your long URL here (e.g., https://google.com)..."
+                        required>
+                    <button id="shorten-btn" class="btn primary">Shorten Now</button>
+                </div>
+                <div id="error-message" class="error" style="display: none;"></div>
+            </div>
+
+            <div id="result-card" class="result-card" style="display: none;">
+                <div class="result-header">Your short link is ready!</div>
+                <div class="short-url-box">
+                    <span id="short-url-display"></span>
+                    <button id="copy-btn" class="copy-btn" title="Copy to clipboard"></button>
+                </div>
+                <div class="stats-hint">Cached in Redis for 10ms redirect speed</div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Built with Spring Boot & Redis | System Design Practical Lab</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
