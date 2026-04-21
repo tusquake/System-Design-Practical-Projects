@@ -49,6 +49,30 @@
                 </div>
             </div>
         </div>
+
+        <div class="list-section">
+            <div class="list-header">
+                <h2>Stored Files</h2>
+                <button id="refresh-btn" class="btn text">Refresh</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Type</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="file-table-body">
+                        <!-- Rows will be added dynamically -->
+                    </tbody>
+                </table>
+                <div id="no-files" class="empty-state" style="display: none;">
+                    No files found in the database.
+                </div>
+            </div>
+        </div>
     </div>
     <script src="app.js"></script>
 </body>

@@ -9,9 +9,16 @@ const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
 const resultCard = document.getElementById('result-card');
 const downloadLink = document.getElementById('download-link');
+const fileTableBody = document.getElementById('file-table-body');
+const noFilesMessage = document.getElementById('no-files');
+const refreshBtn = document.getElementById('refresh-btn');
 
 const API_BASE = "http://localhost:8080/files";
 let selectedFile = null;
+
+// Initial load
+document.addEventListener('DOMContentLoaded', loadFiles);
+if (refreshBtn) refreshBtn.onclick = loadFiles;
 
 // Handle file selection
 dropZone.onclick = () => fileInput.click();
@@ -47,13 +54,16 @@ uploadBtn.onclick = async () => {
         // 2. Upload to GCS directly using the signed URL
         await uploadToGcs(uploadUrl, selectedFile);
 
-        // 3. Get Download URL for the newly uploaded file
-        const downloadResp = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(fileName)}`);
-        const { downloadUrl } = await downloadResp.json();
+        // 3. Refresh list after upload
+        await loadFiles();
 
         // 4. Show Success State
         progressContainer.style.display = 'none';
         resultCard.style.display = 'block';
+        
+        // Setup direct download link for the success card
+        const downloadResp = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(fileName)}`);
+        const { downloadUrl } = await downloadResp.json();
         downloadLink.href = downloadUrl;
 
     } catch (err) {
@@ -62,6 +72,51 @@ uploadBtn.onclick = async () => {
         location.reload();
     }
 };
+
+/**
+ * Fetches all file metadata from the backend and populates the table
+ */
+async function loadFiles() {
+    try {
+        const response = await fetch(API_BASE);
+        const files = await response.json();
+
+        fileTableBody.innerHTML = '';
+        
+        if (files.length === 0) {
+            noFilesMessage.style.display = 'block';
+            return;
+        }
+
+        noFilesMessage.style.display = 'none';
+        files.forEach(file => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><div class="file-name-cell" title="${file.originalFileName}">${file.originalFileName}</div></td>
+                <td><span class="badge">${file.contentType.split('/')[1].toUpperCase()}</span></td>
+                <td>
+                    <button class="btn-small" onclick="viewFile('${file.gcsFileName}')">View</button>
+                </td>
+            `;
+            fileTableBody.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Failed to load files:", err);
+    }
+}
+
+/**
+ * Generates a signed download URL and opens it in a new tab
+ */
+async function viewFile(gcsFileName) {
+    try {
+        const response = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(gcsFileName)}`);
+        const { downloadUrl } = await response.json();
+        window.open(downloadUrl, '_blank');
+    } catch (err) {
+        alert("Failed to generate download URL");
+    }
+}
 
 /**
  * Performs the actual PUT request to GCS
