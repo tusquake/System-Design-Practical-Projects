@@ -42,37 +42,11 @@ An event-driven enhancement using Google Cloud Functions (the equivalent of AWS 
 
 ---
 
-## Engineering Lessons and Logical Concepts
-
-This section documents the architectural logic and the real-world troubleshooting steps encountered during the development of these systems.
-
-### 1. Direct-to-Cloud Upload Logic (Signed URLs)
-**The Concept:** Instead of the user sending a 1GB file to our Spring Boot server (which would bottleneck our bandwidth and memory), the server simply generates a "Signed URL".
-- **Step 1:** Browser requests a Signed URL for a specific file.
-- **Step 2:** Backend verifies the user and asks GCS for a temporary, cryptographically signed permission link.
-- **Step 3:** Browser uses that link to upload the file **directly** to GCS.
-- **Benefit:** High scalability and reduced server cost.
-
-### 2. Event-Driven Architecture (Cloud Functions)
-**The Concept:** The system uses "triggers" to react to changes automatically.
-- **Trigger:** `google.storage.object.finalize`
-- **Logic:** We don't "poll" the bucket to see if a file is there. Instead, GCS pushes an event to the Cloud Function the millisecond an upload is finished.
-- **Troubleshooting - IAM Permissions:** In 2nd Gen functions, GCS requires the `roles/pubsub.publisher` role to send events to Eventarc. Without this, the trigger creation will fail with a "Permission Denied" error.
-
-### 3. Security and Git Best Practices
-- **GitHub Push Protection:** We encountered a block when attempting to push a Google Cloud Service Account key (`.json`). 
-- **The Solution:** Secrets should **never** be committed. We used `git filter-repo` principles (or `git commit --amend`) to remove the secret from the history entirely and added a robust `.gitignore`.
-- **Lesson:** Security at the "Push" level is the last line of defense against credential leakage.
-
-### 4. Cross-Origin Resource Sharing (CORS)
-- **The Problem:** Browsers block requests from one domain (localhost) to another (google-storage) for security.
-- **The Solution:** We must configure a CORS policy on the GCS bucket to allow `PUT` and `GET` requests from our frontend origin.
-
-### 5. Dependency and Runtime Troubleshooting
-- **Maven Resolution:** Encountered `NoClassDefFoundError` for Spring Data JPA.
-- **The Fix:** Adding dependencies to `pom.xml` is not enough; the local environment must be refreshed (`mvn clean install`) to sync the classpath with the project configuration.
-
----
+## Why This Repository?
+Most resources focus on how to pass an interview. This lab focuses on how to build the system. Each module includes:
+1. **The Problem:** The real-world bottleneck or architectural challenge.
+2. **The Code:** A clean, production-ready implementation.
+3. **The Trade-offs:** An analysis of why we chose this specific approach over others.
 
 ## Universal Tech Stack
 ...

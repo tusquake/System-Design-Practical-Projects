@@ -130,12 +130,29 @@ gcp.storage.credentials-path=file:C:/path/to/your/key.json
 - **Relational Integrity**: The database ensures that every GCS object has a corresponding metadata record, facilitating easier cleanup and management.
 - **Environment Isolation**: Sensitive configuration (DB passwords, Cloud Keys) is kept in properties files, allowing for easy environment-specific overrides.
 
----
+## Engineering Lessons and Troubleshooting
 
-## Potential Enhancements
-- **Pub/Sub Notifications**: Trigger a background process (e.g., thumbnail generation) when a file is successfully uploaded to GCS.
-- **Resumable Uploads**: For very large files (GBs), implement GCS Resumable Uploads to handle network interruptions.
-- **User Ownership**: Add a `user_id` column to the metadata table to restrict file access to specific users.
+This project served as a deep dive into the practicalities of cloud-native development. Below are the key logical concepts and troubleshooting steps encountered.
+
+### 1. Direct-to-Cloud Logic (Signed URLs)
+**Logic:** By offloading the file upload to GCS, we prevent our Spring Boot server from being a bottleneck. The backend acts only as an **authorizer** (generating the URL) and an **auditor** (saving metadata to Cloud SQL).
+
+### 2. Serverless Event-Driven Processing
+**Logic:** We integrated a **Google Cloud Function** (Python) that triggers on every successful upload.
+- **The Workflow:** GCS -> Eventarc -> Cloud Function.
+- **Lesson - IAM Permissions:** We discovered that GCS requires the `roles/pubsub.publisher` role to send events to Eventarc in 2nd Gen functions. Without this, the deployment fails.
+
+### 3. Database Migration (Local to Cloud SQL)
+- **The Switch:** We moved from a local PostgreSQL to **Google Cloud SQL**.
+- **Connectivity:** Used the `spring-cloud-gcp-starter-sql-postgresql` connector which manages the secure socket connection using the Cloud SQL Auth Proxy logic under the hood.
+
+### 4. Security & Git Protection
+- **Push Protection:** GitHub blocked our push when a Service Account `.json` was detected.
+- **Resolution:** We had to remove the secret from the Git index, update `.gitignore`, and **amend the commit** to wipe the history. This ensures that even if the code is public, the credentials were never leaked.
+
+### 5. Dependency Management
+- **Issue:** `NoClassDefFoundError` after adding new starters.
+- **Fix:** Always run `mvn clean install` or "Reload Maven Projects" after modifying the `pom.xml` to ensure the runtime classpath is synchronized.
 
 ---
-Created as a System Design Practical Project by Antigravity AI.
+Created as a System Design Practical Project.
