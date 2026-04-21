@@ -35,10 +35,15 @@ A production-grade implementation of direct-to-cloud file uploads with a decoupl
 - **Tech Stack:** Spring Boot, Google Cloud Storage, Cloud SQL (PostgreSQL), Vanilla JS.
 - **Key Features:** V4 Signed URLs, CORS configuration, metadata persistence, and cross-origin security.
 
-### [Serverless File Processor](./gcs-file-processor)
-An event-driven enhancement using Google Cloud Functions (the equivalent of AWS Lambda).
-- **Tech Stack:** Python, Google Cloud Functions, Eventarc.
-- **Key Features:** Asynchronous processing triggered by GCS "Object Finalize" events, enabling serverless background tasks like metadata extraction or thumbnail generation without blocking the main application.
+### [Serverless AI PDF Summarizer](./gcs-file-processor)
+An event-driven AI pipeline using Google Cloud Functions and Vertex AI.
+- **Tech Stack:** Python, Google Cloud Functions, Gemini 2.5 Flash, Vertex AI.
+- **Key Features:** Automatic PDF summarization triggered by GCS uploads, serverless scaling, and asynchronous data processing.
+
+### [TinyLink: URL Shortener](./url-shortener-system) [IN PROGRESS]
+A high-performance URL shortening service designed for low-latency redirections.
+- **Tech Stack:** Spring Boot, Redis, PostgreSQL.
+- **Key Features:** Base62 encoding, distributed caching (Redis), and high-throughput redirection logic.
 
 ---
 
