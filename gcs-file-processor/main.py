@@ -71,11 +71,15 @@ def start_transcoding_job(bucket_name, file_name):
         "elementary_streams": [
             {
                 "key": "video_360p",
-                "video_stream": {"height_pixels": 360, "bitrate_bps": 800000, "frame_rate": 30}
+                "video_stream": {
+                    "h264": {"height_pixels": 360, "bitrate_bps": 800000, "frame_rate": 30}
+                }
             },
             {
                 "key": "video_720p",
-                "video_stream": {"height_pixels": 720, "bitrate_bps": 2500000, "frame_rate": 30}
+                "video_stream": {
+                    "h264": {"height_pixels": 720, "bitrate_bps": 2500000, "frame_rate": 30}
+                }
             },
             {
                 "key": "audio_main",
@@ -110,8 +114,15 @@ def start_transcoding_job(bucket_name, file_name):
                 "sprite_height_pixels": 360,
                 "column_count": 1,
                 "row_count": 1,
-                "total_count": 1,
-                "startTimeOffset": {"seconds": 5}
+                "total_count": 1
+            },
+            {
+                "file_prefix": "preview",
+                "sprite_width_pixels": 160,
+                "sprite_height_pixels": 90,
+                "column_count": 10,
+                "row_count": 10,
+                "total_count": 100
             }
         ]
     }

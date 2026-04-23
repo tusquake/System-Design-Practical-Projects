@@ -82,18 +82,18 @@ uploadBtn.onclick = async () => {
         const response = await fetch(`${API_BASE}/resumable-session?fileName=${encodeURIComponent(selectedFile.name)}&contentType=${encodeURIComponent(selectedFile.type)}`, {
             method: 'POST'
         });
-        
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || "Failed to initiate resumable session");
         }
-        
+
         const data = await response.json();
         currentFileName = data.fileName;
 
         // 2. Start the resumable session and get Session URI
         currentSessionUrl = await initiateResumableSession(data.initiateUrl, selectedFile.type);
-        
+
         // 3. Start the actual data transfer
         await uploadBytes(0);
 
@@ -157,7 +157,7 @@ async function loadFiles() {
  */
 function renderFiles() {
     fileTableBody.innerHTML = '';
-    
+
     const filtered = allFiles.filter(file => {
         const matchesSearch = file.originalFileName.toLowerCase().includes(searchQuery);
         const matchesFilter = currentFilter === 'all' || file.contentType === currentFilter;
@@ -174,14 +174,16 @@ function renderFiles() {
         const isPdf = file.contentType === 'application/pdf';
         const isVideo = file.contentType === 'video/mp4';
         const row = document.createElement('tr');
-        
+
         // Status Badge logic
         let statusClass = 'badge-pending';
         if (file.status === 'READY') statusClass = 'badge-ready';
         if (file.status === 'PROCESSING') statusClass = 'badge-processing';
-        
+
         // Use CDN for thumbnails
-        const thumbnailPath = isVideo ? `${CDN_BASE_URL}/processed-videos/${file.gcsFileName.replace('.mp4', '')}/thumbnail0000000000.jpg` : null;
+        const thumbnailPath = isVideo
+            ? `${CDN_BASE_URL}/processed-videos/${file.gcsFileName.replace('.mp4', '')}/thumbnail0000000000.jpg`
+            : null;
 
         row.innerHTML = `
             <td style="width: 100px;">
@@ -216,36 +218,105 @@ function renderFiles() {
 
 const qualitySelect = document.getElementById('quality-select');
 
+// Sprite sheet constants — must match your transcoder config
+const SPRITE_COLS = 10;
+const SPRITE_ROWS = 10;
+const SPRITE_TOTAL = 100;   // SPRITE_COLS * SPRITE_ROWS
+const SPRITE_CELL_W = 160;   // sprite_width_pixels in transcoder config
+const SPRITE_CELL_H = 90;    // sprite_height_pixels in transcoder config
+const SPRITE_SHEET_W = SPRITE_COLS * SPRITE_CELL_W;  // 1600px total sheet width
+const SPRITE_SHEET_H = SPRITE_ROWS * SPRITE_CELL_H;  // 900px total sheet height
+
 /**
  * Initializes HLS.js to play a processed video manifest from GCS
  */
 async function streamVideo(gcsFileName) {
     videoModal.style.display = 'block';
-    
+
     // Reset quality selector
     qualitySelect.innerHTML = '<option value="-1">Auto (ABR)</option>';
-    
+
     const baseName = gcsFileName.replace(".mp4", "");
     const manifestUrl = `${CDN_BASE_URL}/processed-videos/${baseName}/manifest.m3u8`;
-    
+
     try {
         if (Hls.isSupported()) {
             const hls = new Hls();
             hls.loadSource(manifestUrl);
             hls.attachMedia(videoPlayer);
-            
-            hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
                 // Populate quality levels
                 data.levels.forEach((level, index) => {
                     const option = document.createElement('option');
                     option.value = index;
-                    option.text = `${level.height}p (${Math.round(level.bitrate/1000)} kbps)`;
+                    option.text = `${level.height}p (${Math.round(level.bitrate / 1000)} kbps)`;
                     qualitySelect.appendChild(option);
                 });
 
                 videoPlayer.play();
                 videoStatus.innerText = "Adaptive Bitrate active. Streaming 720p/360p segments...";
             });
+
+            // ─── Seek Preview (Sprite Sheet) ──────────────────────────────────
+            const seekPreview = document.getElementById('seek-preview');
+            let spriteSheetUrl = `${CDN_BASE_URL}/processed-videos/${baseName}/preview0000000000.jpeg`;
+
+            // Apply fixed dimensions
+            seekPreview.style.width = `${SPRITE_CELL_W}px`;
+            seekPreview.style.height = `${SPRITE_CELL_H}px`;
+
+            let hasPreview = false;
+            const img = new Image();
+            img.onload = () => { 
+                console.log("✅ Seek Preview Loaded:", spriteSheetUrl);
+                hasPreview = true; 
+            };
+            img.onerror = () => { 
+                // Fallback: try with a dash if the first one fails
+                if (!spriteSheetUrl.includes("preview-")) {
+                    spriteSheetUrl = `${CDN_BASE_URL}/processed-videos/${baseName}/preview-0000000000.jpg`;
+                    console.log("🔄 Trying fallback URL:", spriteSheetUrl);
+                    img.src = spriteSheetUrl;
+                } else {
+                    console.error("❌ Seek Preview failed to load at both paths.");
+                    hasPreview = false; 
+                }
+            };
+            img.src = spriteSheetUrl;
+
+            videoPlayer.onmousemove = (e) => {
+                if (!videoPlayer.duration || !hasPreview) return;
+
+                const rect = videoPlayer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percent = Math.max(0, Math.min(1, x / rect.width));
+
+                // Map percentage → sprite index (0-99)
+                const index = Math.min(Math.floor(percent * SPRITE_TOTAL), SPRITE_TOTAL - 1);
+                const col = index % SPRITE_COLS;
+                const row = Math.floor(index / SPRITE_COLS);
+
+                // Position the preview thumbnail horizontally, clamped inside the player
+                let previewLeft = x - SPRITE_CELL_W / 2;
+                previewLeft = Math.max(0, Math.min(rect.width - SPRITE_CELL_W, previewLeft));
+
+                seekPreview.style.display = 'block';
+                seekPreview.style.left = `${previewLeft}px`;
+
+                // FIX: use explicit px for backgroundSize so the browser
+                // scales the full sprite sheet to the correct pixel dimensions
+                // and doesn't auto-distort the height when only one axis is given.
+                seekPreview.style.backgroundImage = `url(${spriteSheetUrl})`;
+                seekPreview.style.backgroundSize = `${SPRITE_SHEET_W}px ${SPRITE_SHEET_H}px`;
+                seekPreview.style.backgroundPosition = `-${col * SPRITE_CELL_W}px -${row * SPRITE_CELL_H}px`;
+                seekPreview.style.backgroundRepeat = 'no-repeat';
+            };
+
+            videoPlayer.onmouseleave = () => {
+                seekPreview.style.display = 'none';
+            };
+            // ─────────────────────────────────────────────────────────────────
 
             // Handle manual quality change
             qualitySelect.onchange = () => {
@@ -256,16 +327,17 @@ async function streamVideo(gcsFileName) {
                     videoStatus.innerText = `Forced quality to ${hls.levels[hls.currentLevel].height}p`;
                 }
             };
-            
-            hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+
+            hls.on(Hls.Events.LEVEL_SWITCHED, function (event, data) {
                 const level = hls.levels[data.level];
                 if (hls.loadLevel === -1) {
-                    videoStatus.innerText = `Auto: Switched to ${level.height}p (Bitrate: ${Math.round(level.bitrate/1000)} kbps)`;
+                    videoStatus.innerText = `Auto: Switched to ${level.height}p (Bitrate: ${Math.round(level.bitrate / 1000)} kbps)`;
                 }
             });
 
         } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-            videoPlayer.src = downloadUrl;
+            // Safari native HLS — no sprite preview support here
+            videoPlayer.src = manifestUrl;
             videoStatus.innerText = "Native HLS (Safari/Mobile). Manual quality not supported.";
             videoPlayer.play();
         }
@@ -285,7 +357,7 @@ async function showSummary(gcsFileName) {
     try {
         const response = await fetch(`${API_BASE}/summary?fileName=${encodeURIComponent(gcsFileName)}`);
         const data = await response.json();
-        
+
         summaryLoading.style.display = 'none';
         summaryText.innerText = data.summary;
     } catch (err) {
@@ -336,7 +408,7 @@ function uploadBytes(offset) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         currentXhr = xhr;
-        
+
         xhr.open("PUT", currentSessionUrl);
         // Resumable PUTs require a Content-Range header
         const contentRange = `bytes ${offset}-${selectedFile.size - 1}/${selectedFile.size}`;
@@ -375,7 +447,7 @@ async function finalizeUpload(fileName) {
     progressContainer.style.display = 'none';
     resumableControls.style.display = 'none';
     resultCard.style.display = 'block';
-    
+
     const downloadResp = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(fileName)}`);
     const { downloadUrl } = await downloadResp.json();
     downloadLink.href = downloadUrl;
@@ -393,7 +465,7 @@ pauseBtn.onclick = () => {
 resumeBtn.onclick = async () => {
     resumeBtn.style.display = 'none';
     pauseBtn.style.display = 'inline-block';
-    
+
     try {
         const offset = await getUploadOffset();
         await uploadBytes(offset);
@@ -411,7 +483,7 @@ function getUploadOffset() {
         const xhr = new XMLHttpRequest();
         xhr.open("PUT", currentSessionUrl);
         xhr.setRequestHeader("Content-Range", `bytes */${selectedFile.size}`);
-        
+
         xhr.onload = () => {
             if (xhr.status === 308) {
                 const range = xhr.getResponseHeader("Range");

@@ -40,6 +40,36 @@ body {
     padding: 2rem;
 }
 
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+#video-player {
+    width: 100%;
+    display: block;
+    cursor: crosshair;
+}
+
+.seek-preview {
+    position: absolute;
+    bottom: 60px;
+    width: 160px;
+    height: 90px;
+    background-color: #000;
+    border: 2px solid #fff;
+    border-radius: 4px;
+    display: none;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    z-index: 2000;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
 .list-header {
     display: flex;
     justify-content: space-between;
@@ -133,16 +163,27 @@ td {
 }
 
 @keyframes pulse {
-    0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(0.95); }
-    100% { opacity: 1; transform: scale(1); }
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .filter-btn {
     padding: 0.4rem 1rem;
     border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
     cursor: pointer;
 }
@@ -154,9 +195,9 @@ td {
 }
 
 .search-box input {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     color: white;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     outline: none;
 }
 
