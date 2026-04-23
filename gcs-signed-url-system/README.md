@@ -13,33 +13,27 @@ The project implements a "Direct-to-Cloud" pattern combined with "Metadata Persi
 ```mermaid
 sequenceDiagram
     participant U as User/Browser
+    participant CDN as Global CDN (Edge)
     participant B as Spring Boot Backend
-    participant DB as PostgreSQL Database
     participant G as Google Cloud Storage
+    participant T as Transcoder API (VOD)
 
-    Note over U, G: Step 1: Request Permission & Record Metadata
-    U->>B: GET /files/upload-url?fileName=paper.pdf&contentType=application/pdf
-    B->>B: Validate Content Type
-    B->>G: Request Signed PUT URL (V4)
-    G-->>B: Return Signed URL
-    B->>DB: Save FileMetadata (Original Name, GCS Name, Type)
-    DB-->>B: Metadata Persisted
-    B-->>U: Return JSON {uploadUrl, uniqueFileName}
+    Note over U, G: Step 1: Resumable Upload
+    U->>B: POST /resumable-session
+    B->>G: Initiate Session
+    B->>B: Set status: PENDING
+    B-->>U: Return Session URL
+    U->>G: PUT [Large File Bytes]
 
-    Note over U, G: Step 2: Direct Upload
-    U->>G: PUT [File Bytes] to Signed URL
-    G-->>U: 200 OK (Upload Successful)
+    Note over U, G: Step 2: Automated Pipeline
+    G->>T: Trigger Transcoding
+    T->>G: Save HLS Segments & Thumbnails
+    T-->>B: POST /status (Set READY)
 
-    Note over U, G: Step 3: Access & History
-    U->>B: GET /files (Retrieve History)
-    B->>DB: Fetch All FileMetadata
-    DB-->>B: List of Files
-    B-->>U: Return JSON Array of Files
-
-    U->>B: GET /files/download-url?fileName=unique-name.pdf
-    B->>G: Request Signed GET URL
-    G-->>B: Return Signed Download URL
-    B-->>U: Return JSON {downloadUrl}
+    Note over U, G: Step 3: Global Streaming
+    U->>B: GET /files (Load Dashboard)
+    U->>CDN: GET manifest.m3u8 & .ts segments
+    CDN-->>U: High-speed Cached Delivery
 ```
 
 ---
@@ -58,8 +52,11 @@ Every upload request is logged in PostgreSQL. This allows the system to:
 ### 3. Time-Limited Principle (Least Privilege)
 Signed URLs expire in 15 minutes. This minimizes the window of risk if a URL is leaked.
 
-### 4. Idempotency & Collision Avoidance
-The system uses UUIDs for storage names. This ensures that even if 1,000 users upload a file named `resume.pdf`, they are all stored as unique objects in GCS without overwriting each other.
+### 4. Adaptive Bitrate Streaming (ABR)
+The system automatically transcodes videos into multiple resolutions (720p, 360p). This ensures that a user on a weak mobile network can still watch without buffering while a user on high-speed fiber gets the best quality.
+
+### 5. Global Edge Caching (Cloud CDN)
+By using a Global HTTP(S) Load Balancer and Cloud CDN, video data is stored at the edge of Google's network. This reduces the time-to-first-byte (TTFB) significantly and offloads traffic from the primary storage bucket.
 
 ---
 
@@ -153,9 +150,13 @@ This project served as a deep dive into the practicalities of cloud-native devel
 - **Push Protection:** GitHub blocked our push when a Service Account `.json` was detected.
 - **Resolution:** We had to remove the secret from the Git index, update `.gitignore`, and **amend the commit** to wipe the history. This ensures that even if the code is public, the credentials were never leaked.
 
-### 5. Dependency Management
-- **Issue:** `NoClassDefFoundError` after adding new starters.
-- **Fix:** Always run `mvn clean install` or "Reload Maven Projects" after modifying the `pom.xml` to ensure the runtime classpath is synchronized.
+### 6. Adaptive Bitrate (ABR) Troubleshooting
+- **Codec Nesting:** Learned that `height_pixels` and `bitrate_bps` must be nested inside the `h264` codec block in the Transcoder API configuration.
+- **Hls.js Fallback:** Implemented a native fallback for Safari/iOS while using Hls.js for Chrome/Firefox to ensure cross-browser compatibility.
+
+### 7. Cloud CDN Setup
+- **Load Balancer Integration:** Discovered that Cloud CDN requires a Global HTTP(S) Load Balancer to function; it cannot be enabled on a raw GCS bucket alone.
+- **Cache Hit Verification:** Learned to use the `X-Cache` and `Age` response headers to verify if content is actually being served from the edge.
 
 ---
 Created as a System Design Practical Project.

@@ -14,6 +14,7 @@ const noFilesMessage = document.getElementById('no-files');
 const refreshBtn = document.getElementById('refresh-btn');
 
 const API_BASE = "http://localhost:8080/files";
+const CDN_BASE_URL = "http://34.8.62.41"; // Global Load Balancer IP
 let selectedFile = null;
 
 // Resumable state
@@ -179,7 +180,8 @@ function renderFiles() {
         if (file.status === 'READY') statusClass = 'badge-ready';
         if (file.status === 'PROCESSING') statusClass = 'badge-processing';
         
-        const thumbnailPath = isVideo ? `https://storage.googleapis.com/tushar-secure-uploads/processed-videos/${file.gcsFileName.replace('.mp4', '')}/thumbnail0000000000.jpg` : null;
+        // Use CDN for thumbnails
+        const thumbnailPath = isVideo ? `${CDN_BASE_URL}/processed-videos/${file.gcsFileName.replace('.mp4', '')}/thumbnail0000000000.jpg` : null;
 
         row.innerHTML = `
             <td style="width: 100px;">
@@ -224,15 +226,12 @@ async function streamVideo(gcsFileName) {
     qualitySelect.innerHTML = '<option value="-1">Auto (ABR)</option>';
     
     const baseName = gcsFileName.replace(".mp4", "");
-    const manifestName = `processed-videos/${baseName}/manifest.m3u8`;
+    const manifestUrl = `${CDN_BASE_URL}/processed-videos/${baseName}/manifest.m3u8`;
     
     try {
-        const response = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(manifestName)}`);
-        const { downloadUrl } = await response.json();
-
         if (Hls.isSupported()) {
             const hls = new Hls();
-            hls.loadSource(downloadUrl);
+            hls.loadSource(manifestUrl);
             hls.attachMedia(videoPlayer);
             
             hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
