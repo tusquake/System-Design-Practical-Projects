@@ -30,6 +30,12 @@ public class FileMetadata {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = true)
+    @Builder.Default
+    private String status = "READY"; // READY, PROCESSING, ERROR
+
+    private String thumbnailUrl;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

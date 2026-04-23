@@ -24,10 +24,34 @@ let currentFileName = null;
 const pauseBtn = document.getElementById('pause-btn');
 const resumeBtn = document.getElementById('resume-btn');
 const resumableControls = document.getElementById('resumable-controls');
+const fileSearch = document.getElementById('file-search');
+const filterBtns = document.querySelectorAll('.filter-btn');
+
+let allFiles = [];
+let currentFilter = 'all';
+let searchQuery = '';
 
 // Initial load
 document.addEventListener('DOMContentLoaded', loadFiles);
 if (refreshBtn) refreshBtn.onclick = loadFiles;
+
+// Search listener
+if (fileSearch) {
+    fileSearch.addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderFiles();
+    });
+}
+
+// Filter listeners
+filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderFiles();
+    });
+});
 
 // Handle file selection
 dropZone.onclick = () => fileInput.click();
@@ -115,41 +139,77 @@ window.onclick = (event) => {
 };
 
 /**
- * Fetches all file metadata from the backend and populates the table
+ * Fetches all file metadata from the backend
  */
 async function loadFiles() {
     try {
         const response = await fetch(API_BASE);
-        const files = await response.json();
-
-        fileTableBody.innerHTML = '';
-        
-        if (files.length === 0) {
-            noFilesMessage.style.display = 'block';
-            return;
-        }
-
-        noFilesMessage.style.display = 'none';
-        files.forEach(file => {
-            const isPdf = file.contentType === 'application/pdf';
-            const isVideo = file.contentType === 'video/mp4';
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><div class="file-name-cell" title="${file.originalFileName}">${file.originalFileName}</div></td>
-                <td><span class="badge">${file.contentType.split('/')[1].toUpperCase()}</span></td>
-                <td>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn-small" onclick="viewFile('${file.gcsFileName}')">View</button>
-                        ${isPdf ? `<button class="btn-small secondary-btn" onclick="showSummary('${file.gcsFileName}')">Summary</button>` : ''}
-                        ${isVideo ? `<button class="btn-small secondary-btn" style="background: #10b981 !important;" onclick="streamVideo('${file.gcsFileName}')">Stream</button>` : ''}
-                    </div>
-                </td>
-            `;
-            fileTableBody.appendChild(row);
-        });
+        allFiles = await response.json();
+        renderFiles();
     } catch (err) {
         console.error("Failed to load files:", err);
     }
+}
+
+/**
+ * Renders the filtered and searched files to the table
+ */
+function renderFiles() {
+    fileTableBody.innerHTML = '';
+    
+    const filtered = allFiles.filter(file => {
+        const matchesSearch = file.originalFileName.toLowerCase().includes(searchQuery);
+        const matchesFilter = currentFilter === 'all' || file.contentType === currentFilter;
+        return matchesSearch && matchesFilter;
+    });
+
+    if (filtered.length === 0) {
+        noFilesMessage.style.display = 'block';
+        return;
+    }
+
+    noFilesMessage.style.display = 'none';
+    filtered.forEach(file => {
+        const isPdf = file.contentType === 'application/pdf';
+        const isVideo = file.contentType === 'video/mp4';
+        const row = document.createElement('tr');
+        
+        // Status Badge logic
+        let statusClass = 'badge-pending';
+        if (file.status === 'READY') statusClass = 'badge-ready';
+        if (file.status === 'PROCESSING') statusClass = 'badge-processing';
+        
+        const thumbnailPath = isVideo ? `https://storage.googleapis.com/tushar-secure-uploads/processed-videos/${file.gcsFileName.replace('.mp4', '')}/thumbnail0000000000.jpg` : null;
+
+        row.innerHTML = `
+            <td style="width: 100px;">
+                <span class="badge ${statusClass}">${file.status || 'READY'}</span>
+            </td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    ${isVideo ? `
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: #334155; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                            <img src="${thumbnailPath}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='🎬'">
+                        </div>
+                    ` : `
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            ${isPdf ? '📄' : '📁'}
+                        </div>
+                    `}
+                    <div class="file-name-cell" title="${file.originalFileName}">${file.originalFileName}</div>
+                </div>
+            </td>
+            <td><span class="badge">${file.contentType.split('/')[1].toUpperCase()}</span></td>
+            <td>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn-small" onclick="viewFile('${file.gcsFileName}')">View</button>
+                    ${isPdf ? `<button class="btn-small secondary-btn" onclick="showSummary('${file.gcsFileName}')">Summary</button>` : ''}
+                    ${isVideo ? `<button class="btn-small secondary-btn" style="background: #10b981 !important;" onclick="streamVideo('${file.gcsFileName}')">Stream</button>` : ''}
+                </div>
+            </td>
+        `;
+        fileTableBody.appendChild(row);
+    });
 }
 
 const qualitySelect = document.getElementById('quality-select');

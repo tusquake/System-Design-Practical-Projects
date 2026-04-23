@@ -102,6 +102,17 @@ def start_transcoding_job(bucket_name, file_name):
                 "type": "HLS",
                 "mux_streams": ["sd", "hd"]
             }
+        ],
+        "sprite_sheets": [
+            {
+                "file_prefix": "thumbnail",
+                "sprite_width_pixels": 640,
+                "sprite_height_pixels": 360,
+                "column_count": 1,
+                "row_count": 1,
+                "total_count": 1,
+                "startTimeOffset": {"seconds": 5}
+            }
         ]
     }
 

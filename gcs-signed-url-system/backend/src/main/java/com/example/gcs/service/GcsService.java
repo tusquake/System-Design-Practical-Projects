@@ -64,6 +64,7 @@ public class GcsService {
                 .originalFileName(fileName)
                 .gcsFileName(uniqueFileName)
                 .contentType(contentType)
+                .status("PENDING")
                 .build();
         metadataRepository.save(metadata);
         log.info("Saved metadata for file: {} in database", fileName);
@@ -124,6 +125,7 @@ public class GcsService {
                 .originalFileName(fileName)
                 .gcsFileName(uniqueFileName)
                 .contentType(contentType)
+                .status("PENDING")
                 .build();
         metadataRepository.save(metadata);
 
@@ -131,5 +133,15 @@ public class GcsService {
                 "initiateUrl", signedUrl.toString(),
                 "fileName", uniqueFileName
         );
+    }
+    public void updateFileStatus(String gcsFileName, String status, String thumbnailUrl) {
+        metadataRepository.findByGcsFileName(gcsFileName).ifPresent(metadata -> {
+            metadata.setStatus(status);
+            if (thumbnailUrl != null) {
+                metadata.setThumbnailUrl(thumbnailUrl);
+            }
+            metadataRepository.save(metadata);
+            log.info("Updated status for {}: {} (Thumbnail: {})", gcsFileName, status, thumbnailUrl);
+        });
     }
 }

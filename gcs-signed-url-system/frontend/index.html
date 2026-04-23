@@ -64,14 +64,30 @@
         </div>
 
         <div class="list-section">
-            <div class="list-header">
-                <h2>Stored Files</h2>
-                <button id="refresh-btn" class="btn text">Refresh</button>
+            <div class="list-header" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                    <h2>Stored Files</h2>
+                    <button id="refresh-btn" class="btn text">Refresh</button>
+                </div>
+                
+                <!-- Search and Filters -->
+                <div class="controls-row" style="display: flex; gap: 1rem; width: 100%; flex-wrap: wrap;">
+                    <div class="search-box" style="flex: 1; min-width: 250px;">
+                        <input type="text" id="file-search" placeholder="Search by name..." style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    </div>
+                    <div class="filter-chips" style="display: flex; gap: 0.5rem;">
+                        <button class="btn-small filter-btn active" data-filter="all">All</button>
+                        <button class="btn-small filter-btn" data-filter="video/mp4">Videos</button>
+                        <button class="btn-small filter-btn" data-filter="application/pdf">PDFs</button>
+                    </div>
+                </div>
             </div>
+
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
+                            <th>Status</th>
                             <th>File Name</th>
                             <th>Type</th>
                             <th>Actions</th>

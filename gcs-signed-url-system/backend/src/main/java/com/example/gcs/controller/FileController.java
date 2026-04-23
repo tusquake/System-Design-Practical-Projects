@@ -45,4 +45,13 @@ public class FileController {
             @RequestParam String contentType) {
         return ResponseEntity.ok(gcsService.createResumableSession(fileName, contentType));
     }
+
+    @PostMapping("/{gcsFileName}/status")
+    public ResponseEntity<Void> updateStatus(
+            @PathVariable String gcsFileName,
+            @RequestParam String status,
+            @RequestParam(required = false) String thumbnailUrl) {
+        gcsService.updateFileStatus(gcsFileName, status, thumbnailUrl);
+        return ResponseEntity.ok().build();
+    }
 }
