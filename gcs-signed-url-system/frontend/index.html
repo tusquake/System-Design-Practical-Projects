@@ -6,6 +6,7 @@
     <title>CloudStream | Secure GCS Uploader</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
     <div class="container">
@@ -84,6 +85,8 @@
                     No files found in the database.
                 </div>
             </div>
+        </div>
+
         <!-- AI Summary Modal -->
         <div id="summary-modal" class="modal">
             <div class="modal-content">
@@ -102,6 +105,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- Video Player Modal -->
+        <div id="video-modal" class="modal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3>Video Stream (ABR)</h3>
+                    <span class="close" id="close-video-modal">&times;</span>
+                </div>
+                <div class="video-container">
+                    <video id="video-player" controls style="width: 100%; border-radius: 12px;"></video>
+                </div>
+                <div class="video-controls" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div id="video-status" style="font-size: 0.9rem; color: #64748b;">Loading manifest...</div>
+                    <div class="quality-selector">
+                        <label for="quality-select" style="font-size: 0.8rem; color: #64748b; margin-right: 0.5rem;">Quality:</label>
+                        <select id="quality-select" class="btn-small" style="background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; cursor: pointer;">
+                            <option value="-1">Auto (ABR)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     <script src="app.js"></script>
 </body>

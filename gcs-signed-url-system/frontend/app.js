@@ -90,11 +90,28 @@ const closeModal = document.getElementById('close-modal');
 const summaryText = document.getElementById('summary-text');
 const summaryLoading = document.getElementById('summary-loading');
 
+const videoModal = document.getElementById('video-modal');
+const closeVideoModal = document.getElementById('close-video-modal');
+const videoPlayer = document.getElementById('video-player');
+const videoStatus = document.getElementById('video-status');
+
 if (closeModal) {
     closeModal.onclick = () => modal.style.display = 'none';
 }
+if (closeVideoModal) {
+    closeVideoModal.onclick = () => {
+        videoModal.style.display = 'none';
+        videoPlayer.pause();
+        videoPlayer.src = "";
+    };
+}
+
 window.onclick = (event) => {
     if (event.target == modal) modal.style.display = 'none';
+    if (event.target == videoModal) {
+        videoModal.style.display = 'none';
+        videoPlayer.pause();
+    }
 };
 
 /**
@@ -115,6 +132,7 @@ async function loadFiles() {
         noFilesMessage.style.display = 'none';
         files.forEach(file => {
             const isPdf = file.contentType === 'application/pdf';
+            const isVideo = file.contentType === 'video/mp4';
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><div class="file-name-cell" title="${file.originalFileName}">${file.originalFileName}</div></td>
@@ -123,6 +141,7 @@ async function loadFiles() {
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn-small" onclick="viewFile('${file.gcsFileName}')">View</button>
                         ${isPdf ? `<button class="btn-small secondary-btn" onclick="showSummary('${file.gcsFileName}')">Summary</button>` : ''}
+                        ${isVideo ? `<button class="btn-small secondary-btn" style="background: #10b981 !important;" onclick="streamVideo('${file.gcsFileName}')">Stream</button>` : ''}
                     </div>
                 </td>
             `;
@@ -130,6 +149,69 @@ async function loadFiles() {
         });
     } catch (err) {
         console.error("Failed to load files:", err);
+    }
+}
+
+const qualitySelect = document.getElementById('quality-select');
+
+/**
+ * Initializes HLS.js to play a processed video manifest from GCS
+ */
+async function streamVideo(gcsFileName) {
+    videoModal.style.display = 'block';
+    
+    // Reset quality selector
+    qualitySelect.innerHTML = '<option value="-1">Auto (ABR)</option>';
+    
+    const baseName = gcsFileName.replace(".mp4", "");
+    const manifestName = `processed-videos/${baseName}/manifest.m3u8`;
+    
+    try {
+        const response = await fetch(`${API_BASE}/download-url?fileName=${encodeURIComponent(manifestName)}`);
+        const { downloadUrl } = await response.json();
+
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(downloadUrl);
+            hls.attachMedia(videoPlayer);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                // Populate quality levels
+                data.levels.forEach((level, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.text = `${level.height}p (${Math.round(level.bitrate/1000)} kbps)`;
+                    qualitySelect.appendChild(option);
+                });
+
+                videoPlayer.play();
+                videoStatus.innerText = "Adaptive Bitrate active. Streaming 720p/360p segments...";
+            });
+
+            // Handle manual quality change
+            qualitySelect.onchange = () => {
+                hls.currentLevel = parseInt(qualitySelect.value);
+                if (hls.currentLevel === -1) {
+                    videoStatus.innerText = "Switched to Auto (ABR) mode";
+                } else {
+                    videoStatus.innerText = `Forced quality to ${hls.levels[hls.currentLevel].height}p`;
+                }
+            };
+            
+            hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+                const level = hls.levels[data.level];
+                if (hls.loadLevel === -1) {
+                    videoStatus.innerText = `Auto: Switched to ${level.height}p (Bitrate: ${Math.round(level.bitrate/1000)} kbps)`;
+                }
+            });
+
+        } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+            videoPlayer.src = downloadUrl;
+            videoStatus.innerText = "Native HLS (Safari/Mobile). Manual quality not supported.";
+            videoPlayer.play();
+        }
+    } catch (err) {
+        alert("Video stream not ready yet. Transcoding might be in progress.");
     }
 }
 
