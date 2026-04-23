@@ -135,7 +135,18 @@ This project served as a deep dive into the practicalities of cloud-native devel
 **Logic:** By offloading the file upload to GCS, we prevent our Spring Boot server from being a bottleneck. The backend acts only as an **authorizer** (generating the URL) and an **auditor** (saving metadata to Cloud SQL).
 
 ### 2. Serverless AI Data Pipeline (Gemini 2.5 Flash)
-**Logic:** We integrated an asynchronous **AI Summary Service** using Google Cloud Functions and Vertex AI.
+**Logic:** The system is a production-grade Video-on-Demand (VOD) and AI data pipeline. It is divided into three main components:
+1. **Backend (Spring Boot):** Manages metadata, signed URLs, and summarization retrieval.
+2. **Frontend (Vanilla JS/CSS):** Premium user dashboard with adaptive player and seek previews.
+3. **Cloud Functions (Python):** Event-driven workers for AI summarization and VOD transcoding.
+
+### 📂 Project Structure
+```text
+Global-Enterprise-VOD-Platform/
+├── backend/            # Spring Boot REST API
+├── frontend/           # UI & Video Player logic
+└── cloud-functions/    # Python workers (Transcoding & Gemini AI)
+```
 - **The Workflow:** GCS (Upload) -> Eventarc (Trigger) -> Cloud Function (Processing) -> Vertex AI (Gemini 2.5 Flash) -> GCS (Storage).
 - **Advanced Feature:** Implemented **[Resumable Uploads](./RESUMABLE_UPLOADS.md)** for high-reliability file ingestion.
 - **Lesson - Service Agent Provisioning:** When first connecting Vertex AI to GCS, Google needs a few minutes to provision internal "Service Agents." Attempts during this time will return a `400` error.
