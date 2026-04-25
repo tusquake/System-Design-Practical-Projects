@@ -71,3 +71,55 @@ Distributed-Notification-Service/
 │   └── push-worker/
 └── infrastructure/          # Terraform/Scripts (Optional)
 ```
+
+---
+
+## 🚀 Implementation Progress
+
+### Phase 1: Core Infrastructure ✅
+- [x] Provisioned `global-notification-topic` & `global-failure-topic`.
+- [x] Configured Subscriptions with Dead Letter Queue (DLQ) logic.
+- [x] Set up IAM permissions for cross-service publishing.
+
+### Phase 2: Gateway & Workers ✅
+- [x] **Spring Boot Gateway:** Implemented ingestion API with PubSubTemplate integration.
+- [x] **Email Worker:** Python Cloud Function with SendGrid integration & verified sender setup.
+- [x] **SMS Worker:** Python Cloud Function with Twilio API integration.
+
+### Phase 3: Advanced Scheduling ✅
+- [x] **Cloud Tasks Integration:** Implemented the "Callback Pattern" for delayed notifications.
+- [x] **Local Tunneling:** Integrated **ngrok** for testing Cloud callbacks on localhost.
+
+---
+
+## 🛰️ Future Roadmap
+
+### 1. Push Notification Channel (FCM) ⏳
+Implement the third worker for mobile/web push notifications using Firebase Cloud Messaging.
+
+### 2. Intelligent Routing & Preferences 🧠
+Add a "Brain" layer to the Gateway. Check user database/Redis for channel preferences (e.g., "Email Only") before broadcasting.
+
+### 3. Idempotency & Deduplication 🛡️
+Implement an `idempotency-key` check using Redis to prevent duplicate notifications during network retries.
+
+### 4. Monitoring & Observability 📊
+Set up Cloud Monitoring dashboards to track delivery success rates, latency, and DLQ volume.
+
+---
+
+## 🧪 Testing the System
+
+### Instant Notification
+```bash
+curl -X POST http://localhost:8080/v1/notify \
+-H "Content-Type: application/json" \
+-d '{"recipient": "user@example.com", "content": "Hello!", "subject": "Alert"}'
+```
+
+### Scheduled Notification (60s Delay)
+```bash
+curl -X POST "http://localhost:8080/v1/notify/schedule?delaySeconds=60" \
+-H "Content-Type: application/json" \
+-d '{"recipient": "user@example.com", "content": "Delayed Alert", "subject": "System Design"}'
+```

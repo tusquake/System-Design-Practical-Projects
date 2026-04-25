@@ -17,39 +17,45 @@ public class NotificationController {
 
     private final PubSubTemplate pubSubTemplate;
     private final ObjectMapper objectMapper;
+    private final com.example.notification.service.SchedulingService schedulingService;
 
     @Value("${notification.topic.name}")
     private String topicName;
 
-    public NotificationController(PubSubTemplate pubSubTemplate, ObjectMapper objectMapper) {
+    public NotificationController(PubSubTemplate pubSubTemplate, ObjectMapper objectMapper,
+            com.example.notification.service.SchedulingService schedulingService) {
         this.pubSubTemplate = pubSubTemplate;
         this.objectMapper = objectMapper;
+        this.schedulingService = schedulingService;
     }
 
     @PostMapping
     public ResponseEntity<Map<String, String>> sendNotification(@RequestBody NotificationRequest request) {
         log.info("Received notification request for: {}", request.getRecipient());
+        publishToPubSub(request);
+        return ResponseEntity.ok(Map.of("status", "ACCEPTED", "message", "Notification queued"));
+    }
 
+    @PostMapping("/schedule")
+    public ResponseEntity<Map<String, String>> scheduleNotification(
+            @RequestBody NotificationRequest request,
+            @RequestParam(defaultValue = "60") long delaySeconds) {
+
+        log.info("Scheduling notification for: {} with delay: {}s", request.getRecipient(), delaySeconds);
+        schedulingService.scheduleNotification(request, delaySeconds);
+
+        return ResponseEntity.ok(Map.of(
+                "status", "SCHEDULED",
+                "message", "Notification will be sent in " + delaySeconds + " seconds"));
+    }
+
+    private void publishToPubSub(NotificationRequest request) {
         try {
-            // Convert the object to JSON string for the message body
             String messageJson = objectMapper.writeValueAsString(request);
-            
-            // Publish to Pub/Sub
             pubSubTemplate.publish(topicName, messageJson);
-            
-            log.info("Successfully published message to topic: {}", topicName);
-            
-            return ResponseEntity.ok(Map.of(
-                "status", "ACCEPTED",
-                "message", "Notification queued for delivery"
-            ));
-            
+            log.info("Published to Pub/Sub: {}", topicName);
         } catch (Exception e) {
-            log.error("Failed to publish message", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "status", "ERROR",
-                "message", "Internal server error while queuing notification"
-            ));
+            throw new RuntimeException("Pub/Sub publishing failed", e);
         }
     }
 }
