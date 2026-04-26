@@ -1,0 +1,36 @@
+# Neo4j Data & DB files
+neo4j/
+backend/neo4j/
+neostore*
+*.db
+*.id
+transaction.log.*
+
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.restoreBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.appendent
+
+# GCP Keys
+*.json
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log

@@ -1,0 +1,95 @@
+:root {
+    --bg-color: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --accent-color: #38bdf8;
+    --text-color: #f8fafc;
+    --user-color: #c084fc;
+    --interest-color: #fb923c;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 10;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+}
+
+.stats {
+    background: rgba(0,0,0,0.2);
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+.btn {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+}
+
+/* Graph Canvas */
+#cy {
+    flex-grow: 1;
+    height: 100%;
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+}
+
+.legend {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}

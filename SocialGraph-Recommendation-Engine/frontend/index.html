@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialGraph Intelligence Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="sidebar">
+            <div class="title">SocialGraph 🕸️</div>
+            <p>Intelligence Engine Visualizer</p>
+            
+            <div class="stats">
+                <div>Nodes: <span id="node-count">0</span></div>
+                <div>Edges: <span id="edge-count">0</span></div>
+            </div>
+
+            <button class="btn" onclick="fetchData()">Refresh Graph</button>
+            <button class="btn" style="background: #a855f7; color: white;" onclick="runLayout()">Re-Layout Nodes</button>
+            
+            <div style="margin-top: auto; font-size: 0.7rem; opacity: 0.5;">
+                System Design Practical Projects
+            </div>
+        </div>
+
+        <div id="cy"></div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="dot" style="background: #c084fc;"></div>
+                <span>User Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="dot" style="background: #fb923c;"></div>
+                <span>Interest Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="dot" style="background: #38bdf8; width: 20px; height: 2px; border-radius: 0;"></div>
+                <span>Follow Relationship</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

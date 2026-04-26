@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.12.0
+    container_name: social-graph-db
+    ports:
+      - "7474:7474" # HTTP Browser
+      - "7687:7687" # Bolt (Binary Protocol)
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+    volumes:
+      - ./neo4j/data:/data
+      - ./neo4j/logs:/logs
+      - ./neo4j/import:/import
+      - ./neo4j/plugins:/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-proxy --quiet --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
