@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoLedger | Future of Banking</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Neo<span>Ledger</span></h1>
+            <div class="user-badge" id="current-user">Not Logged In</div>
+        </header>
+
+        <main>
+            <section class="wallet-card">
+                <div class="card-content">
+                    <p class="label">Total Balance</p>
+                    <h2 id="balance">$0.00</h2>
+                    <p class="account-id">Account: <span id="account-name">---</span></p>
+                </div>
+            </section>
+
+            <div class="actions-grid">
+                <section class="action-panel">
+                    <h3>Quick Transfer</h3>
+                    <div class="form-group">
+                        <input type="text" id="to-user" placeholder="Recipient Username">
+                        <input type="number" id="amount" placeholder="Amount ($)">
+                        <button onclick="performTransfer()" id="btn-transfer">Send Money</button>
+                    </div>
+                </section>
+
+                <section class="action-panel">
+                    <h3>Onboarding</h3>
+                    <div class="form-group">
+                        <input type="text" id="new-user" placeholder="Choose Username">
+                        <input type="number" id="initial-balance" placeholder="Initial Deposit ($)">
+                        <button onclick="createAccount()" class="secondary">Open Wallet</button>
+                    </div>
+                </section>
+            </div>
+
+            <section class="history-panel">
+                <h3>Transaction History</h3>
+                <div id="history-list" class="history-list">
+                    <!-- Transactions injected here -->
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
