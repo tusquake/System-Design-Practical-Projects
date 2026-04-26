@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElasticSearch Explorer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Search Engine 🔍</h1>
+            <p style="color: #94a3b8;">Full-Text, Fuzzy & Multi-Field Intelligence</p>
+        </header>
+
+        <div class="search-container">
+            <span style="padding-left: 1rem;">🔍</span>
+            <input type="text" id="search-input" placeholder="Search for products (try typos like 'iphne')..." oninput="debounceSearch()">
+        </div>
+
+        <div class="search-mode">
+            <button class="mode-btn active" onclick="setMode('basic')">Basic</button>
+            <button class="mode-btn" onclick="setMode('fuzzy')">Fuzzy (Typo Tolerant)</button>
+            <button class="mode-btn" onclick="setMode('multi')">Multi-Field</button>
+        </div>
+
+        <div id="results">
+            <!-- Results will appear here -->
+            <div style="text-align: center; grid-column: 1/-1; opacity: 0.5; padding: 4rem;">
+                Type something to start searching...
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product FAB -->
+    <div class="fab" onclick="toggleModal(true)">+</div>
+
+    <!-- Ingestion Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1.5rem;">Add New Product</h2>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="p-name" placeholder="e.g. MacBook Pro M3">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="p-desc" rows="3" placeholder="Detailed product description..."></textarea>
+            </div>
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <div style="flex: 1;">
+                    <label>Category</label>
+                    <input type="text" id="p-cat" placeholder="Electronics">
+                </div>
+                <div style="flex: 1;">
+                    <label>Price</label>
+                    <input type="number" id="p-price" placeholder="999">
+                </div>
+            </div>
+            <button class="btn" onclick="saveProduct()">Save to ElasticSearch</button>
+            <button class="btn" style="background: transparent; color: #94a3b8; margin-top: 0.5rem;" onclick="toggleModal(false)">Cancel</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
