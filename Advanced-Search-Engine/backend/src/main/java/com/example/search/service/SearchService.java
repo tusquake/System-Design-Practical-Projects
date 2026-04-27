@@ -22,21 +22,50 @@ public class SearchService {
     /**
      * Fuzzy Search: Finds products even with typos!
      */
-    public List<Product> fuzzySearch(String query) {
-        // Build the fuzzy query as a JSON string for simplicity and power
-        String fuzzyJson = "{ \"fuzzy\": { \"name\": { \"value\": \"" + query + "\", \"fuzziness\": \"AUTO\" } } }";
+    public List<SearchHit<Product>> fuzzySearch(String query) {
+        String fuzzyJson = "{ \"query\": { \"fuzzy\": { \"name\": { \"value\": \"" + query + "\", \"fuzziness\": \"AUTO\" } } }, " +
+                           "\"highlight\": { \"fields\": { \"name\": {}, \"description\": {} } } }";
         Query searchQuery = new StringQuery(fuzzyJson);
 
         SearchHits<Product> searchHits = elasticsearchOperations.search(searchQuery, Product.class);
-        return searchHits.get().map(SearchHit::getContent).collect(Collectors.toList());
+        return searchHits.getSearchHits();
     }
 
     /**
-     * Multi-Match Search: Searches across BOTH name and description
+     * Multi-Match Search with Aggregations: Searches across BOTH name and description
+     * and returns category counts.
      */
-    public List<Product> multiMatchSearch(String query) {
-        String multiMatchJson = "{ \"multi_match\": { \"query\": \"" + query + "\", \"fields\": [\"name\", \"description\"] } }";
-        Query searchQuery = new StringQuery(multiMatchJson);
+    public org.springframework.data.elasticsearch.core.SearchHits<Product> searchWithFacets(String query) {
+        String facetJson = "{ \"query\": { \"multi_match\": { \"query\": \"" + query + "\", \"fields\": [\"name^3\", \"description\"] } }, " +
+                           "\"highlight\": { \"fields\": { \"name\": {}, \"description\": {} } }, " +
+                           "\"aggs\": { \"categories\": { \"terms\": { \"field\": \"category\" } } } }";
+        Query searchQuery = new StringQuery(facetJson);
+
+        return elasticsearchOperations.search(searchQuery, Product.class);
+    }
+
+    /**
+     * Autocomplete: Suggests product names as the user types
+     */
+    public List<String> fetchSuggestions(String query) {
+        String suggestJson = "{ \"suggest\": { \"product-suggest\": { \"prefix\": \"" + query + "\", \"completion\": { \"field\": \"suggest\" } } } }";
+        Query searchQuery = new StringQuery(suggestJson);
+
+        SearchHits<Product> searchHits = elasticsearchOperations.search(searchQuery, Product.class);
+        
+        // Extract the suggested text from the hits
+        return searchHits.get()
+                .map(hit -> hit.getContent().getName())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Geo-Search: Finds products within a certain distance from a location
+     */
+    public List<Product> geoSearch(double lat, double lon, String distance) {
+        String geoJson = "{ \"query\": { \"bool\": { \"must\": { \"match_all\": {} }, \"filter\": { \"geo_distance\": { \"distance\": \"" + distance + "\", \"location\": { \"lat\": " + lat + ", \"lon\": " + lon + " } } } } } }";
+        Query searchQuery = new StringQuery(geoJson);
 
         SearchHits<Product> searchHits = elasticsearchOperations.search(searchQuery, Product.class);
         return searchHits.get().map(SearchHit::getContent).collect(Collectors.toList());

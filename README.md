@@ -19,7 +19,8 @@ A collection of high-performance, distributed, and scalable system implementatio
 ### 3. Advanced Search & Intelligence Engine
 *   **Tech:** Elasticsearch 8.x, Inverted Indexing, Spring Data ES.
 *   **Core Logic:** Full-text search across millions of records with "Fuzzy Matching" (typo tolerance) and relevance scoring.
-*   **Key Feature:** Multi-field boosting to ensure the most relevant results appear first.
+*   **Intelligence:** Implements **Autocomplete**, **Geo-Spatial Search**, and **Field Boosting** to prioritize results.
+*   **Key Feature:** High-performance faceted search (aggregations) for real-time filtering.
 
 ### 4. Distributed Notification Service
 *   **Tech:** GCP Pub/Sub, Multi-Worker Architecture.

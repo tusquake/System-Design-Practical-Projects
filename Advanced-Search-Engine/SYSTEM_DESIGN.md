@@ -24,7 +24,14 @@ Handles typos. If a user types "iphne," the system calculates that it's only 1 c
 ### 3. Relevance Scoring (BM25)
 Why is one result #1 and another #10?
 - **TF (Term Frequency):** How many times does the word appear in the doc?
-- **IDF (Inverse Document Frequency):** If the word is rare (like "Kafka"), it's more important than a common word (like "Java").
+- **IDF (Inverse Document Frequency):** If the word is rare, it's more important.
+- **Field Boosting:** We give the `name` field a **3x weight** over the description.
+
+### 4. Advanced Intelligence Layers
+- **Autocomplete:** Uses a `Completion` suggester for low-latency prefix lookups.
+- **Aggregations (Facets):** Calculations that run across the entire result set to group counts by category.
+- **Geo-Spatial Search:** Uses `geo_distance` math to filter records based on their distance from a specific lat/lon point.
+- **Highlighting:** The engine returns fragments of text with matches wrapped in `<em>` tags for visual feedback.
 
 ---
 

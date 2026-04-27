@@ -27,4 +27,10 @@ public class Product {
 
     @Field(type = FieldType.Integer)
     private Integer stock;
+
+    @Field(type = FieldType.Object)
+    private org.springframework.data.elasticsearch.core.geo.GeoPoint location;
+
+    // Special field for Autocomplete Suggesters
+    private org.springframework.data.elasticsearch.core.suggest.Completion suggest;
 }

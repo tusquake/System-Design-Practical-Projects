@@ -16,19 +16,34 @@
 
         <div class="search-container">
             <span style="padding-left: 1rem;">🔍</span>
-            <input type="text" id="search-input" placeholder="Search for products (try typos like 'iphne')..." oninput="debounceSearch()">
+            <div style="flex: 1; position: relative;">
+                <input type="text" id="search-input" placeholder="Search for products..." oninput="handleInput()" onkeydown="handleKeydown(event)">
+                <div id="autocomplete-suggestions" class="suggestions-dropdown"></div>
+            </div>
         </div>
 
         <div class="search-mode">
             <button class="mode-btn active" onclick="setMode('basic')">Basic</button>
             <button class="mode-btn" onclick="setMode('fuzzy')">Fuzzy (Typo Tolerant)</button>
             <button class="mode-btn" onclick="setMode('multi')">Multi-Field</button>
+            <button class="mode-btn" style="background: #10b981; border-color: #10b981; color: white;" onclick="setMode('near-me')">📍 Near Me</button>
         </div>
 
-        <div id="results">
-            <!-- Results will appear here -->
-            <div style="text-align: center; grid-column: 1/-1; opacity: 0.5; padding: 4rem;">
-                Type something to start searching...
+        <div class="main-layout">
+            <aside id="facets-sidebar" class="sidebar">
+                <h3>Filters</h3>
+                <div id="category-facets" class="facet-list">
+                    <!-- Categories will appear here -->
+                </div>
+            </aside>
+
+            <div id="results-container" style="flex: 1;">
+                <div id="results">
+                    <!-- Results will appear here -->
+                    <div style="text-align: center; grid-column: 1/-1; opacity: 0.5; padding: 4rem;">
+                        Type something to start searching...
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -56,6 +71,16 @@
                 <div style="flex: 1;">
                     <label>Price</label>
                     <input type="number" id="p-price" placeholder="999">
+                </div>
+            </div>
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <div style="flex: 1;">
+                    <label>Lat (e.g. 12.97)</label>
+                    <input type="number" id="p-lat" placeholder="12.97">
+                </div>
+                <div style="flex: 1;">
+                    <label>Lon (e.g. 77.59)</label>
+                    <input type="number" id="p-lon" placeholder="77.59">
                 </div>
             </div>
             <button class="btn" onclick="saveProduct()">Save to ElasticSearch</button>

@@ -1,5 +1,6 @@
 let currentMode = 'basic';
-let timeout = null;
+let searchTimeout = null;
+let suggestTimeout = null;
 
 function setMode(mode) {
     currentMode = mode;
@@ -10,9 +11,60 @@ function setMode(mode) {
     performSearch();
 }
 
-function debounceSearch() {
-    clearTimeout(timeout);
-    timeout = setTimeout(performSearch, 300);
+function handleInput() {
+    const query = document.getElementById('search-input').value;
+    
+    // 1. Fetch Suggestions (Autocomplete)
+    clearTimeout(suggestTimeout);
+    if (query.length > 1) {
+        suggestTimeout = setTimeout(() => fetchAutocomplete(query), 150);
+    } else {
+        hideSuggestions();
+    }
+
+    // 2. Perform actual search (Debounced)
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(performSearch, 400);
+}
+
+async function fetchAutocomplete(query) {
+    try {
+        const response = await fetch(`http://localhost:8082/v1/search/autocomplete?query=${encodeURIComponent(query)}`);
+        const suggestions = await response.json();
+        showSuggestions(suggestions);
+    } catch (error) {
+        console.error("Autocomplete failed:", error);
+    }
+}
+
+function showSuggestions(suggestions) {
+    const dropdown = document.getElementById('autocomplete-suggestions');
+    if (suggestions.length === 0) {
+        hideSuggestions();
+        return;
+    }
+
+    dropdown.innerHTML = suggestions.map(s => `
+        <div class="suggestion-item" onclick="selectSuggestion('${s.replace(/'/g, "\\'")}')">${s}</div>
+    `).join('');
+    dropdown.style.display = 'block';
+}
+
+function selectSuggestion(val) {
+    document.getElementById('search-input').value = val;
+    hideSuggestions();
+    performSearch();
+}
+
+function hideSuggestions() {
+    document.getElementById('autocomplete-suggestions').style.display = 'none';
+}
+
+function handleKeydown(e) {
+    if (e.key === 'Enter') {
+        hideSuggestions();
+        performSearch();
+    }
 }
 
 async function performSearch() {
@@ -23,31 +75,75 @@ async function performSearch() {
     }
 
     try {
-        const response = await fetch(`http://localhost:8082/v1/search/${currentMode}?query=${encodeURIComponent(query)}`);
-        const products = await response.json();
-        renderResults(products);
+        let url = `http://localhost:8082/v1/search/${currentMode}?query=${encodeURIComponent(query)}`;
+        
+        // Custom logic for Near-Me
+        if (currentMode === 'near-me') {
+            // Simulated User Location (e.g. Bengaluru center)
+            const userLat = 12.9716;
+            const userLon = 77.5946;
+            url = `http://localhost:8082/v1/search/near-me?lat=${userLat}&lon=${userLon}&distance=10km`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // Handle both SearchHits object and raw array
+        const hits = data.searchHits ? data.searchHits : (Array.isArray(data) ? data : []);
+        renderResults(hits);
+
+        // Render Facets (Aggregations)
+        if (data.aggregations && data.aggregations.aggregations) {
+            renderFacets(data.aggregations.aggregations.categories.buckets);
+        } else {
+            document.getElementById('category-facets').innerHTML = '<div style="font-size: 0.8rem; color: #94a3b8;">No filters available</div>';
+        }
     } catch (error) {
         console.error("Search failed:", error);
     }
 }
 
-function renderResults(products) {
+function renderFacets(buckets) {
+    const container = document.getElementById('category-facets');
+    if (!buckets || buckets.length === 0) {
+        container.innerHTML = '<div style="font-size: 0.8rem; color: #94a3b8;">No filters available</div>';
+        return;
+    }
+
+    container.innerHTML = buckets.map(b => `
+        <div class="facet-item">
+            <span>${b.key}</span>
+            <span class="facet-count">${b.docCount}</span>
+        </div>
+    `).join('');
+}
+
+function renderResults(hits) {
     const container = document.getElementById('results');
-    if (products.length === 0) {
+    if (!hits || hits.length === 0) {
         container.innerHTML = '<div style="text-align: center; grid-column: 1/-1; opacity: 0.5; padding: 4rem;">No matching products found.</div>';
         return;
     }
 
-    container.innerHTML = products.map(p => `
-        <div class="card">
-            <h3>${p.name}</h3>
-            <p>${p.description}</p>
-            <div class="meta">
-                <span style="color: #a855f7;">${p.category}</span>
-                <span style="color: #10b981;">$${p.price}</span>
+    container.innerHTML = hits.map(hit => {
+        const p = hit.content;
+        const highlights = hit.highlightFields || {};
+        
+        // Use highlighted text if available, otherwise fallback to original
+        const name = highlights.name ? highlights.name[0] : p.name;
+        const description = highlights.description ? highlights.description[0] : p.description;
+
+        return `
+            <div class="card">
+                <h3>${name}</h3>
+                <p>${description}</p>
+                <div class="meta">
+                    <span style="color: #a855f7;">${p.category}</span>
+                    <span style="color: #10b981;">$${p.price}</span>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function saveProduct() {
@@ -56,6 +152,10 @@ async function saveProduct() {
         description: document.getElementById('p-desc').value,
         category: document.getElementById('p-cat').value,
         price: parseFloat(document.getElementById('p-price').value),
+        location: {
+            lat: parseFloat(document.getElementById('p-lat').value || 0),
+            lon: parseFloat(document.getElementById('p-lon').value || 0)
+        },
         stock: 100
     };
 

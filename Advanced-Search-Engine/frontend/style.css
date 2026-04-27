@@ -57,7 +57,38 @@ h1 {
     gap: 1rem;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
+    position: relative;
 }
+
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+    z-index: 50;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.suggestion-item {
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+}
+
+.suggestion-item:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.suggestion-item:last-child { border-bottom: none; }
 
 input[type="text"] {
     flex: 1;
@@ -92,6 +123,59 @@ input[type="text"] {
     border-color: var(--primary);
 }
 
+/* Main Layout */
+.main-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.sidebar {
+    width: 250px;
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    position: sticky;
+    top: 2rem;
+}
+
+.sidebar h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.facet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.facet-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    transition: background 0.2s;
+}
+
+.facet-item:hover {
+    background: var(--glass);
+    color: white;
+}
+
+.facet-count {
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
 /* Results Grid */
 #results {
     display: grid;
@@ -115,6 +199,16 @@ input[type="text"] {
 .card h3 { margin-bottom: 0.5rem; color: #60a5fa; }
 .card p { color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem; }
 .card .meta { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; }
+
+/* Search Highlighting */
+em {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    font-style: normal;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 700;
+}
 
 /* FAB & Modal */
 .fab {
