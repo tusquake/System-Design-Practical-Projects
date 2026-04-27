@@ -93,8 +93,8 @@ async function performSearch() {
         renderResults(hits);
 
         // Render Facets (Aggregations)
-        if (data.aggregations && data.aggregations.aggregations) {
-            renderFacets(data.aggregations.aggregations.categories.buckets);
+        if (data.aggregations) {
+            renderFacets(data.aggregations);
         } else {
             document.getElementById('category-facets').innerHTML = '<div style="font-size: 0.8rem; color: #94a3b8;">No filters available</div>';
         }
@@ -126,20 +126,24 @@ function renderResults(hits) {
     }
 
     container.innerHTML = hits.map(hit => {
-        const p = hit.content;
-        const highlights = hit.highlightFields || {};
+        // Handle both raw product (from basic search) and SearchHit wrap (from fuzzy/multi)
+        const isSearchHit = hit.content !== undefined;
+        const p = isSearchHit ? hit.content : hit;
+        const highlights = isSearchHit ? (hit.highlightFields || {}) : {};
+
+        if (!p) return ''; // Skip if content is missing
         
         // Use highlighted text if available, otherwise fallback to original
-        const name = highlights.name ? highlights.name[0] : p.name;
-        const description = highlights.description ? highlights.description[0] : p.description;
+        const name = (highlights.name && highlights.name.length > 0) ? highlights.name[0] : (p.name || 'Unknown');
+        const description = (highlights.description && highlights.description.length > 0) ? highlights.description[0] : (p.description || '');
 
         return `
             <div class="card">
                 <h3>${name}</h3>
                 <p>${description}</p>
                 <div class="meta">
-                    <span style="color: #a855f7;">${p.category}</span>
-                    <span style="color: #10b981;">$${p.price}</span>
+                    <span style="color: #a855f7;">${p.category || 'General'}</span>
+                    <span style="color: #10b981;">$${p.price || 0}</span>
                 </div>
             </div>
         `;

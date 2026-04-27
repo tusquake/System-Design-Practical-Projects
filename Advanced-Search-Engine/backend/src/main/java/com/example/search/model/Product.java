@@ -4,9 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.CompletionField;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.GeoPointField;
 
 @Data
 @NoArgsConstructor
@@ -33,11 +35,11 @@ public class Product {
     @Field(type = FieldType.Integer)
     private Integer stock;
 
-    @Field(type = FieldType.GeoPoint)
+    @GeoPointField
     private GeoLocation location;
 
     // Special field for Autocomplete Suggesters
-    @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Completion)
+    @CompletionField(maxInputLength = 100)
     @com.fasterxml.jackson.annotation.JsonIgnore
     private org.springframework.data.elasticsearch.core.suggest.Completion suggest;
 }
