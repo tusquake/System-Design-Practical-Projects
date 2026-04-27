@@ -1,64 +1,57 @@
-# The System Design Lab: Practical Implementations
+# System Design Practical Projects: Master Portfolio
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-
-This repository is a comprehensive collection of real-world system design patterns implemented from scratch. Instead of just theoretical diagrams, this lab focuses on building the actual infrastructure to understand the trade-offs in scalability, availability, and performance.
-
-## The Core Pillars
-This project covers the essential building blocks of modern software architecture:
-
-### 1. Data Management and Scalability
-- **Database Optimization:** Indexing strategies, query tuning, and partitioning in PostgreSQL.
-- **Scaling Patterns:** Practical examples of Horizontal Sharding, Read Replicas, and NoSQL integration.
-- **Caching:** Implementing distributed caching patterns (Look-aside, Write-through) using Redis.
-
-### 2. Communication and Integration
-- **Asynchronous Processing:** Event-driven architecture using Message Queues (RabbitMQ/Kafka).
-- **API Design:** Building resilient REST, gRPC, and GraphQL interfaces with proper Rate Limiting.
-- **Load Balancing:** Service discovery, circuit breakers, and traffic management strategies.
-
-### 3. Storage and Security
-- **Cloud Storage:** High-throughput file upload systems (GCS/S3) with secure signed URL patterns.
-- **Security:** Implementing OAuth2, JWT, and Zero Trust principles in distributed services.
-
-### 4. Advanced Topics
-- **AI Infrastructure:** Scalable LLM evaluation pipelines and vector database (Pinecone/Milvus) integrations.
-- **Observability:** Centralized logging (ELK), distributed tracing (Jaeger), and Prometheus/Grafana monitoring.
+A collection of high-performance, distributed, and scalable system implementations. This repository serves as a practical blueprint for solving complex engineering challenges in real-world production environments.
 
 ---
 
-## Featured Projects
+## Project Showcases
 
-### [GCS Signed URL System](./gcs-signed-url-system)
-A production-grade implementation of direct-to-cloud file uploads with a decoupled metadata service.
-- **Tech Stack:** Spring Boot, Google Cloud Storage, Cloud SQL (PostgreSQL), Vanilla JS.
-- **Key Features:** V4 Signed URLs, CORS configuration, metadata persistence, and cross-origin security.
+### 1. SocialGraph Recommendation & Fraud Engine
+*   **Tech:** Neo4j, Cypher, Spring Boot, GCP Pub/Sub.
+*   **Core Logic:** Implements Friend-of-a-Friend (FOAF) recommendations and Bot-Ring detection using Graph Theory.
+*   **Key Feature:** Asynchronous graph ingestion via cloud events to handle massive write loads.
 
-### [Serverless AI PDF Summarizer](./gcs-file-processor)
-An event-driven AI pipeline using Google Cloud Functions and Vertex AI.
-- **Tech Stack:** Python, Google Cloud Functions, Gemini 2.5 Flash, Vertex AI.
-- **Key Features:** Automatic PDF summarization triggered by GCS uploads, serverless scaling, and asynchronous data processing.
+### 2. Global Distributed Rate Limiter
+*   **Tech:** Redis, Lua Scripting, Token Bucket Algorithm.
+*   **Core Logic:** Prevents API abuse using a high-throughput, atomic counting engine.
+*   **Key Feature:** Uses Lua scripts inside Redis to guarantee zero race conditions across a distributed cluster.
 
-### [TinyLink: URL Shortener](./url-shortener-system) [IN PROGRESS]
-A high-performance URL shortening service designed for low-latency redirections.
-- **Tech Stack:** Spring Boot, Redis, PostgreSQL.
-- **Key Features:** Base62 encoding, distributed caching (Redis), and high-throughput redirection logic.
+### 3. Advanced Search & Intelligence Engine
+*   **Tech:** Elasticsearch 8.x, Inverted Indexing, Spring Data ES.
+*   **Core Logic:** Full-text search across millions of records with "Fuzzy Matching" (typo tolerance) and relevance scoring.
+*   **Key Feature:** Multi-field boosting to ensure the most relevant results appear first.
+
+### 4. Distributed Notification Service
+*   **Tech:** GCP Pub/Sub, Multi-Worker Architecture.
+*   **Core Logic:** A fan-out system that handles massive notification bursts (SMS, Email, Push) without dropping messages.
+*   **Key Feature:** Durable message processing with dead-letter-queue (DLQ) support.
+
+### 5. Distributed Ledger & Atomic Transfers
+*   **Tech:** ACID Compliance, Transactional Integrity.
+*   **Core Logic:** Ensures that in a multi-step financial transfer, money is never "lost" or "double-spent."
+*   **Key Feature:** Implementation of the SAGA pattern logic for distributed consistency.
+
+### 6. High-Performance URL Shortener
+*   **Tech:** Base62 Encoding, MurmurHash, Redis Caching.
+*   **Core Logic:** Converts long URLs into tiny, collision-resistant aliases.
+*   **Key Feature:** Optimized for read-heavy traffic with millisecond response times.
+
+### 7. GCS Signed URL & Media Delivery
+*   **Tech:** Google Cloud Storage, Signed URLs, ABR Streaming.
+*   **Core Logic:** Secure, time-limited access to private cloud assets.
+*   **Key Feature:** Support for Adaptive Bitrate (ABR) video streaming previews.
 
 ---
 
-## Why This Repository?
-Most resources focus on how to pass an interview. This lab focuses on how to build the system. Each module includes:
-1. **The Problem:** The real-world bottleneck or architectural challenge.
-2. **The Code:** A clean, production-ready implementation.
-3. **The Trade-offs:** An analysis of why we chose this specific approach over others.
+## Project Navigation
+Each project contains its own SYSTEM_DESIGN.md explaining the deep technical trade-offs, bottlenecks, and scaling strategies.
 
-## Universal Tech Stack
-...
-- **Languages:** Java (Spring Boot), Python (FastAPI/Django)
-- **Data:** PostgreSQL, Redis, Kafka, Elasticsearch
-- **Infrastructure:** Docker, Kubernetes, GCP/AWS
-- **AI:** Google GenAI SDK, OpenAI API
+- [SocialGraph Engine](./SocialGraph-Recommendation-Engine)
+- [Global Rate Limiter](./Global-Rate-Limiter)
+- [Advanced Search Engine](./Advanced-Search-Engine)
+- [Distributed Ledger](./Distributed-Ledger-System)
+- [Notification Service](./Distributed-Notification-Service)
+- [URL Shortener](./url-shortener-system)
 
-## Contributing
-Found a bug or want to add a new system design pattern? Contributions are welcome! Please feel free to submit a Pull Request.
+---
+> **"Design is not just what it looks like and feels like. Design is how it works."**
