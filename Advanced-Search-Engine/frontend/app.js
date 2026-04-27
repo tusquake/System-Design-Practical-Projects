@@ -147,16 +147,24 @@ function renderResults(hits) {
 }
 
 async function saveProduct() {
+    // Explicitly build the object to prevent any hidden duplication
+    const nameVal = document.getElementById('product-name-input').value;
+    const descVal = document.getElementById('p-desc').value;
+    const catVal = document.getElementById('p-cat').value;
+    const priceVal = parseFloat(document.getElementById('p-price').value || 0);
+    const latVal = parseFloat(document.getElementById('p-lat').value || 0);
+    const lonVal = parseFloat(document.getElementById('p-lon').value || 0);
+
     const product = {
-        name: document.getElementById('p-name').value,
-        description: document.getElementById('p-desc').value,
-        category: document.getElementById('p-cat').value,
-        price: parseFloat(document.getElementById('p-price').value),
-        location: {
-            lat: parseFloat(document.getElementById('p-lat').value || 0),
-            lon: parseFloat(document.getElementById('p-lon').value || 0)
+        "name": nameVal,
+        "description": descVal,
+        "category": catVal,
+        "price": priceVal,
+        "location": {
+            "lat": latVal,
+            "lon": lonVal
         },
-        stock: 100
+        "stock": 100
     };
 
     try {

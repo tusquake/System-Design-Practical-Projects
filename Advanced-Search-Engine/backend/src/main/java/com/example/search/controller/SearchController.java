@@ -22,6 +22,7 @@ public class SearchController {
     // Ingestion API: Add a new product to the index
     @PostMapping("/products")
     public Product addProduct(@RequestBody Product product) {
+        System.out.println("DEBUG: Received product: " + product);
         // Automatically populate the suggest field for autocomplete
         product.setSuggest(new org.springframework.data.elasticsearch.core.suggest.Completion(new String[]{product.getName()}));
         return productRepository.save(product);

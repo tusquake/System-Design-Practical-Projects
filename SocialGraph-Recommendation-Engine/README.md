@@ -1,4 +1,4 @@
-# 🕸️ SocialGraph: Recommendation & Fraud Engine
+# SocialGraph: Recommendation & Fraud Engine
 
 > A high-performance graph processing system built with **Neo4j** and **Spring Boot**, designed to solve complex relationship problems like "People You May Know" and "Fraudulent Bot Ring Detection."
 
