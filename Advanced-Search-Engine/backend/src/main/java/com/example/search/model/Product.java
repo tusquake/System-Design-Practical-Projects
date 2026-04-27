@@ -32,5 +32,6 @@ public class Product {
     private org.springframework.data.elasticsearch.core.geo.GeoPoint location;
 
     // Special field for Autocomplete Suggesters
+    @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Completion)
     private org.springframework.data.elasticsearch.core.suggest.Completion suggest;
 }

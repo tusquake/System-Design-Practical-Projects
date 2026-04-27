@@ -22,13 +22,12 @@ public class SearchService {
     /**
      * Fuzzy Search: Finds products even with typos!
      */
-    public List<SearchHit<Product>> fuzzySearch(String query) {
+    public org.springframework.data.elasticsearch.core.SearchHits<Product> fuzzySearch(String query) {
         String fuzzyJson = "{ \"query\": { \"fuzzy\": { \"name\": { \"value\": \"" + query + "\", \"fuzziness\": \"AUTO\" } } }, " +
                            "\"highlight\": { \"fields\": { \"name\": {}, \"description\": {} } } }";
         Query searchQuery = new StringQuery(fuzzyJson);
 
-        SearchHits<Product> searchHits = elasticsearchOperations.search(searchQuery, Product.class);
-        return searchHits.getSearchHits();
+        return elasticsearchOperations.search(searchQuery, Product.class);
     }
 
     /**

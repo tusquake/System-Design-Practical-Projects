@@ -42,11 +42,7 @@ public class SearchController {
     // Advanced Search: Typo tolerant
     @GetMapping("/fuzzy")
     public org.springframework.data.elasticsearch.core.SearchHits<Product> fuzzySearch(@RequestParam String query) {
-        return new org.springframework.data.elasticsearch.core.SearchHitsImpl<>(
-            0, null, 0, null, 
-            searchService.fuzzySearch(query), 
-            null, null
-        );
+        return searchService.fuzzySearch(query);
     }
 
     // Multi-Field Search with Facets: Name + Description + Category Counts
