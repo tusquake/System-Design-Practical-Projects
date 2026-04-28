@@ -1,0 +1,32 @@
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: iot-cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=IoTCluster
+      - CASSANDRA_DC=dc1
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Pub/Sub Emulator for local development without hitting GCP quotas/costs
+  pubsub-emulator:
+    image: google/cloud-sdk:latest
+    container_name: pubsub-emulator
+    ports:
+      - "8085:8085"
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+
+  simulator:
+    image: python:3.10-slim
+    container_name: iot-simulator
+    profiles: ["simulator"] # This prevents it from starting automatically with 'up -d'
+    volumes:
+      - ./simulator.py:/app/simulator.py
+      - ../gcs-signed-url-system:/gcs-signed-url-system
+    working_dir: /app
+    command: sh -c "pip install google-cloud-pubsub && python simulator.py"

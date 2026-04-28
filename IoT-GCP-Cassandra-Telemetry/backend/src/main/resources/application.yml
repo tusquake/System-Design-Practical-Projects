@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: telemetry-backend
+
+  # GCP Configuration
+  cloud:
+    gcp:
+      project-id: homegenie-prod
+      credentials:
+        location: file:../../gcs-signed-url-system/homegenie-prod-97c358d8431e.json
+      pubsub:
+        enabled: true
+
+  # Cassandra Configuration
+  cassandra:
+    contact-points: localhost
+    port: 9042
+    local-datacenter: datacenter1
+    keyspace-name: iot_telemetry
+    schema-action: create_if_not_exists
+
+# Custom Properties for our application
+app:
+  pubsub:
+    subscription-name: sensor-data-sub
+    topic-name: sensor-data-topic
