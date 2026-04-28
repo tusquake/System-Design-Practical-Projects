@@ -1,0 +1,3 @@
+# No external dependencies required as smtplib and email are part of the Python standard library.
+# We will use the functions-framework for local testing if needed.
+functions-framework==3.*

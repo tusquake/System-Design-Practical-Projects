@@ -7,18 +7,26 @@ This project demonstrates a scalable IoT pipeline. In a real-world scenario, mil
 
 ### 1. GCP Pub/Sub (The Shock Absorber)
 - **Decoupling**: Devices don't need to know about the database. They just "Publish" to a topic.
-- **Scalability**: Pub/Sub handles massive spikes in traffic by buffering messages until the consumer is ready.
-- **Reliability**: If the backend goes down, messages stay in the subscription for up to 7 days.
+- **Fan-Out Architecture**: One single topic (`sensor-data-topic`) distributes the identical message to three different downstream consumers simultaneously.
+- **Scalability**: Pub/Sub handles massive spikes in traffic by buffering messages.
 
-### 2. Spring Boot Consumer (The Worker)
-- **Asynchronous Ingestion**: Uses the Spring Cloud GCP library to listen for messages.
-- **Transformation**: Converts raw JSON telemetry into optimized Cassandra entities.
-- **Batching**: (Potential enhancement) In production, this would write to Cassandra in batches for even higher throughput.
+### 2. Spring Boot Consumer (The Live API Worker)
+- **Asynchronous Ingestion**: Uses the Spring Cloud GCP library to listen for messages via `sensor-data-sub`.
+- **Real-Time Sink**: Saves data directly to Cassandra for live operational queries (e.g., dashboard UI).
 
-### 3. Apache Cassandra (The Time-Series Sink)
-Cassandra is a **Wide-Column Store** perfect for time-series because:
+### 3. Apache Cassandra (The Time-Series Operational DB)
+Cassandra is a **Wide-Column Store** perfect for live time-series because:
 - **LSM-Tree Storage**: Writes are appended to a log (CommitLog) and a memory table (Memtable), making them $O(1)$.
-- **Clustering Keys**: Data is stored on disk sorted by the clustering key (`recorded_at DESC`). This makes fetching the "Latest 10 readings" extremely fast as it's just a sequential disk read.
+- **Clustering Keys**: Data is stored on disk sorted by the clustering key (`recorded_at DESC`).
+
+### 4. BigQuery (The Data Warehouse)
+- **No-Code Streaming**: Uses a native Pub/Sub-to-BigQuery subscription (`sensor-data-bq-sub`) to stream data directly into the `iot_analytics.sensor_data` table without writing any code.
+- **Analytics**: Optimized for massive analytical queries and Data Science (e.g., "Average monthly temperature over 5 years").
+
+### 5. Cloud Function (The Alerting System)
+- **Serverless Event-Driven**: Triggered instantly by every new Pub/Sub message.
+- **Anomaly Detection**: Parses the JSON and checks thresholds (e.g., Temp > 40°C or Battery < 20%).
+- **Notification**: Uses Python's `smtplib` to send emergency email alerts via Gmail when an anomaly is detected.
 
 ## 🧠 Data Modeling: The "Bucket" Pattern
 We use a composite primary key: `PRIMARY KEY ((sensor_id, day_bucket), recorded_at)`.
