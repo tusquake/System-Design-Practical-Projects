@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Nexus | Telemetry Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="icon">🛰️</span>
+                <h1>IoT<span>Nexus</span></h1>
+            </div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="dot pulse"></span>
+                    <span class="label">Live Stream</span>
+                </div>
+                <select id="sensorSelect">
+                    <option value="sensor-A1">Sensor A1 (Kitchen)</option>
+                    <option value="sensor-B2">Sensor B2 (Living Room)</option>
+                    <option value="sensor-C3">Sensor C3 (Garage)</option>
+                    <option value="sensor-D4">Sensor D4 (Outdoor)</option>
+                </select>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Metric Cards -->
+            <div class="card metric-card glass">
+                <div class="card-header">
+                    <h3>Temperature</h3>
+                    <span class="unit">°C</span>
+                </div>
+                <div class="value-container">
+                    <h2 id="tempValue">--.-</h2>
+                    <div class="trend" id="tempTrend">--</div>
+                </div>
+                <canvas id="tempChart"></canvas>
+            </div>
+
+            <div class="card metric-card glass">
+                <div class="card-header">
+                    <h3>Humidity</h3>
+                    <span class="unit">%</span>
+                </div>
+                <div class="value-container">
+                    <h2 id="humidityValue">--.-</h2>
+                    <div class="trend" id="humidityTrend">--</div>
+                </div>
+                <canvas id="humidityChart"></canvas>
+            </div>
+
+            <div class="card metric-card glass">
+                <div class="card-header">
+                    <h3>Pressure</h3>
+                    <span class="unit">hPa</span>
+                </div>
+                <div class="value-container">
+                    <h2 id="pressureValue">----</h2>
+                    <div class="trend" id="pressureTrend">--</div>
+                </div>
+                <canvas id="pressureChart"></canvas>
+            </div>
+
+            <div class="card battery-card glass">
+                <div class="card-header">
+                    <h3>Battery Level</h3>
+                    <span id="batteryStatus">Charging</span>
+                </div>
+                <div class="battery-visual">
+                    <div class="battery-body">
+                        <div id="batteryFill" class="battery-fill" style="width: 0%"></div>
+                    </div>
+                    <h2 id="batteryValue">--%</h2>
+                </div>
+                <p class="last-update">Last update: <span id="lastUpdateTime">Never</span></p>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
