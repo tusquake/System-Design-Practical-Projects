@@ -11,14 +11,18 @@ import org.springframework.stereotype.Service;
 public class DriverService {
 
     private final RedisTemplate<String, String> redisTemplate;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
     private static final String DRIVER_GEO_KEY = "drivers:locations";
 
     public void updateLocation(DriverLocation location) {
-        // Redis GEOADD command
+        // 1. Update Geospatial Index in Redis
         redisTemplate.opsForGeo().add(
             DRIVER_GEO_KEY, 
-            new Point(location.getLongitude(), location.getLatitude()), 
+            new org.springframework.data.geo.Point(location.getLongitude(), location.getLatitude()), 
             location.getDriverId()
         );
+
+        // 2. Broadcast to WebSockets for real-time UI updates
+        messagingTemplate.convertAndSend("/topic/drivers", location);
     }
 }

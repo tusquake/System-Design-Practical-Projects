@@ -103,3 +103,39 @@ async function findRides() {
 }
 
 document.getElementById('find-rides-btn').addEventListener('click', findRides);
+
+// --- WebSocket Real-Time Tracking ---
+function connectWebSocket() {
+    const socket = new SockJS('http://localhost:8080/ws-drivers');
+    const stompClient = Stomp.over(socket);
+    
+    // Disable debug logging to keep console clean
+    stompClient.debug = null;
+
+    stompClient.connect({}, function (frame) {
+        console.log('Connected to Live Tracking: ' + frame);
+        
+        stompClient.subscribe('/topic/drivers', function (message) {
+            const driver = JSON.parse(message.body);
+            updateDriverMarker(driver);
+        });
+    }, function(error) {
+        console.log("WebSocket error, retrying in 5s...");
+        setTimeout(connectWebSocket, 5000);
+    });
+}
+
+function updateDriverMarker(driver) {
+    // Only update if the driver is already on the map (found during search)
+    // or if you want to show ALL drivers globally (optional)
+    if (driverMarkers[driver.driverId]) {
+        const marker = driverMarkers[driver.driverId];
+        marker.setLatLng([driver.latitude, driver.longitude]);
+    } else {
+        // Optional: Show new drivers that enter the area
+        // For now, we only track the ones we matched
+    }
+}
+
+// Start WebSocket connection on page load
+connectWebSocket();
