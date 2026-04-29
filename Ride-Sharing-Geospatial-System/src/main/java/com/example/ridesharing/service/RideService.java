@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RideService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
     private static final String DRIVER_GEO_KEY = "drivers:locations";
 
     public List<DriverMatch> findNearbyDrivers(RiderRequest request) {
@@ -32,17 +32,18 @@ public class RideService {
         RedisGeoCommands.GeoRadiusCommandArgs args = RedisGeoCommands.GeoRadiusCommandArgs
                 .newGeoRadiusArgs()
                 .includeDistance()
+                .includeCoordinates() // This was missing!
                 .sortAscending()
                 .limit(5); // Return top 5 nearest
 
-        GeoResults<RedisGeoCommands.GeoLocation<Object>> results = redisTemplate.opsForGeo()
+        GeoResults<RedisGeoCommands.GeoLocation<String>> results = redisTemplate.opsForGeo()
                 .radius(DRIVER_GEO_KEY, circle, args);
 
         if (results == null) return List.of();
 
         return results.getContent().stream()
                 .map(res -> {
-                    RedisGeoCommands.GeoLocation<Object> location = res.getContent();
+                    RedisGeoCommands.GeoLocation<String> location = res.getContent();
                     return new DriverMatch(
                         location.getName().toString(),
                         res.getDistance().getValue(),

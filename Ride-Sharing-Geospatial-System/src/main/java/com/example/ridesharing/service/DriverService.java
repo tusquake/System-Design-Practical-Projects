@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class DriverService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
     private static final String DRIVER_GEO_KEY = "drivers:locations";
 
     public void updateLocation(DriverLocation location) {
