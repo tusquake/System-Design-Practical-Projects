@@ -42,6 +42,16 @@ A collection of high-performance, distributed, and scalable system implementatio
 *   **Core Logic:** Secure, time-limited access to private cloud assets.
 *   **Key Feature:** Support for Adaptive Bitrate (ABR) video streaming previews.
 
+### 8. Ride-Sharing Geospatial Engine
+*   **Tech:** Spring Boot, Redis GEO, WebSockets (STOMP), Leaflet.js.
+*   **Core Logic:** High-performance spatial matching ($O(\log N)$) between riders and a live fleet of 50 simulated drivers.
+*   **Key Feature:** Real-time car tracking using WebSockets to push GPS coordinate updates directly to a glassmorphism map UI.
+
+### 9. IoT Telemetry & Analytics Platform
+*   **Tech:** GCP Pub/Sub, Dataflow, Apache Cassandra.
+*   **Core Logic:** High-throughput ingestion of time-series data from simulated IoT sensors.
+*   **Key Feature:** Horizontally scalable architecture designed to handle massive write-loads and provide sub-second analytical querying.
+
 ---
 
 ## Project Navigation
@@ -53,6 +63,8 @@ Each project contains its own SYSTEM_DESIGN.md explaining the deep technical tra
 - [Distributed Ledger](./Distributed-Ledger-System)
 - [Notification Service](./Distributed-Notification-Service)
 - [URL Shortener](./url-shortener-system)
+- [Ride-Sharing Geospatial System](./Ride-Sharing-Geospatial-System)
+- [IoT Telemetry Platform](./IoT-GCP-Cassandra-Telemetry)
 
 ---
 > **"Design is not just what it looks like and feels like. Design is how it works."**
