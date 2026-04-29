@@ -1,0 +1,21 @@
+# Secrets
+.env
+*.json
+*.key
+*.pem
+
+# IDE & Build
+.idea/
+.vscode/
+target/
+*.class
+*.jar
+*.log
+
+# Docker
+grafana-storage/
+
+# Python
+__pycache__/
+*.pyc
+venv/

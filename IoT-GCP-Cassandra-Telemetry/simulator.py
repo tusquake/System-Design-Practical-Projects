@@ -29,7 +29,8 @@ try:
                 "temperature": round(random.uniform(20.0, 35.0), 2),
                 "humidity": round(random.uniform(30.0, 70.0), 2),
                 "pressure": round(random.uniform(1000.0, 1020.0), 2),
-                "batteryLevel": random.randint(10, 100)
+                "batteryLevel": random.randint(10, 100),
+                "recordedAt": __import__('datetime').datetime.utcnow().isoformat() + "Z"
             }
             
             # Convert to JSON and publish

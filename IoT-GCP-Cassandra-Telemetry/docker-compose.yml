@@ -30,3 +30,19 @@ services:
       - ../gcs-signed-url-system:/gcs-signed-url-system
     working_dir: /app
     command: sh -c "pip install google-cloud-pubsub && python simulator.py"
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: iot-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-bigquery-datasource
+      - BIGQUERY_SERVICE_ACCOUNT_JSON=${BIGQUERY_SERVICE_ACCOUNT_JSON}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ../gcs-signed-url-system:/etc/gcp/credentials:ro
+
+volumes:
+  grafana-storage:
