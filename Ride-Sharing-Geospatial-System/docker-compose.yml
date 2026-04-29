@@ -1,0 +1,22 @@
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: ride-sharing-redis
+    ports:
+      - "6379:6379"   # Redis Port
+      - "8001:8001"   # Redis Insight GUI
+    volumes:
+      - redis-data:/data
+
+  simulator:
+    image: python:3.10-slim
+    container_name: ride-sharing-simulator
+    profiles: ["simulator"]
+    volumes:
+      - ./fleet_simulator.py:/app/fleet_simulator.py
+    working_dir: /app
+    network_mode: "host" # Allows it to talk to localhost:8080 (the Spring app)
+    command: sh -c "pip install requests && python fleet_simulator.py"
+
+volumes:
+  redis-data:

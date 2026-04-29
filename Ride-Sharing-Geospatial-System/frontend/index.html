@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideFlow | Premium Ride Sharing</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="map"></div>
+
+    <div class="overlay">
+        <header>
+            <div class="logo">Ride<span>Flow</span></div>
+            <div class="status-badge">Live in Howrah</div>
+        </header>
+
+        <main>
+            <div class="search-card">
+                <h1>Where to?</h1>
+                <p>Find the nearest drivers around you in seconds.</p>
+                
+                <div class="input-group">
+                    <span class="dot"></span>
+                    <input type="text" value="Unnamed Road, Howrah" readonly>
+                </div>
+
+                <button id="find-rides-btn" class="primary-btn">
+                    <span>Find Nearby Rides</span>
+                    <div class="btn-glow"></div>
+                </button>
+
+                <div id="results-panel" class="results-panel hidden">
+                    <h3>Available Drivers</h3>
+                    <ul id="driver-list"></ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
