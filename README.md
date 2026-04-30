@@ -52,6 +52,11 @@ A collection of high-performance, distributed, and scalable system implementatio
 *   **Core Logic:** High-throughput ingestion of time-series data from simulated IoT sensors.
 *   **Key Feature:** Horizontally scalable architecture designed to handle massive write-loads and provide sub-second analytical querying.
 
+### 10. Collaborative Document Editor
+*   **Tech:** Spring Boot, WebSockets (STOMP), CRDTs (Yjs), Redis.
+*   **Core Logic:** Real-time, conflict-free editing using Conflict-free Replicated Data Types (CRDTs) to ensure eventual consistency.
+*   **Key Feature:** High-concurrency synchronization with support for live cursor tracking and document snapshots.
+
 ---
 
 ## Project Navigation
@@ -65,6 +70,7 @@ Each project contains its own SYSTEM_DESIGN.md explaining the deep technical tra
 - [URL Shortener](./url-shortener-system)
 - [Ride-Sharing Geospatial System](./Ride-Sharing-Geospatial-System)
 - [IoT Telemetry Platform](./IoT-GCP-Cassandra-Telemetry)
+- [Collaborative Document Editor](./Collaborative-Doc-Editor)
 
 ---
 > **"Design is not just what it looks like and feels like. Design is how it works."**
