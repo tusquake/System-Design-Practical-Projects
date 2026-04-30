@@ -10,8 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
+    "buffer": "^6.0.3",
+    "lucide-react": "^1.14.0",
+    "quill": "^2.0.3",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "sockjs-client": "^1.6.1",
+    "y-quill": "^1.0.0",
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
