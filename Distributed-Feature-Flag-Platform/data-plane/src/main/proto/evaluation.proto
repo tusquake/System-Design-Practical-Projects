@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package com.ffplatform.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.ffplatform.grpc";
+option java_outer_classname = "EvaluationProto";
+
+service EvaluationService {
+  // Unary RPC for single flag evaluation
+  rpc GetEvaluation (EvaluationRequest) returns (EvaluationResponse);
+
+  // Bulk evaluation for multiple flags
+  rpc BulkEvaluation (BulkEvaluationRequest) returns (BulkEvaluationResponse);
+
+  // Bidirectional stream for real-time updates
+  rpc StreamUpdates (stream ClientInfo) returns (stream FlagUpdate);
+}
+
+message EvaluationRequest {
+  string flag_key = 1;
+  string user_id = 2;
+  map<string, string> context = 3; // e.g., country, device, version
+}
+
+message EvaluationResponse {
+  string flag_key = 1;
+  bool enabled = 2;
+  string variant = 3; // For A/B tests: "control", "treatment_a", etc.
+  string value = 4;   // JSON or string value if applicable
+}
+
+message BulkEvaluationRequest {
+  string user_id = 1;
+  map<string, string> context = 2;
+}
+
+message BulkEvaluationResponse {
+  repeated EvaluationResponse evaluations = 1;
+}
+
+message ClientInfo {
+  string client_id = 1;
+  repeated string interested_flags = 2;
+}
+
+message FlagUpdate {
+  string flag_key = 1;
+  bool enabled = 2;
+  string variant = 3;
+  string value = 4;
+}

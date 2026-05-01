@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ff_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  pubsub-emulator:
+    image: google/cloud-sdk:latest
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"
+
+  control-plane:
+    build:
+      context: ./control-plane
+      dockerfile: ../Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ff_platform
+      SPRING_CLOUD_GCP_PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+    depends_on:
+      - postgres
+      - pubsub-emulator
+
+  data-plane:
+    build:
+      context: ./data-plane
+      dockerfile: ../Dockerfile
+    ports:
+      - "9090:9090" # gRPC port
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ff_platform
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_CLOUD_GCP_PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+    depends_on:
+      - postgres
+      - redis
+      - pubsub-emulator
+
+  webhook-service:
+    build:
+      context: ./webhook-service
+      dockerfile: ../Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ff_platform
+      SPRING_CLOUD_GCP_PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+    depends_on:
+      - postgres
+      - pubsub-emulator
