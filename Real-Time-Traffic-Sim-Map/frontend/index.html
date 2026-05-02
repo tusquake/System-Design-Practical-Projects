@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         *,
         *::before,
@@ -35,7 +36,6 @@
             --stat-bg: rgba(255, 255, 255, 0.05);
             --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
             --toggle-bg: rgba(255, 255, 255, 0.08);
-            --toggle-icon: '☀️';
         }
 
         [data-theme="light"] {
@@ -147,12 +147,15 @@
             cursor: pointer;
             font-size: 1rem;
             display: flex;
-            align-items: center;
-            justify-content: center;
             transition: background 0.2s, transform 0.2s, border-color 0.3s;
             flex-shrink: 0;
             margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
+        .theme-toggle i { width: 16px; height: 16px; }
 
         .theme-toggle:hover {
             transform: scale(1.1);
@@ -207,9 +210,14 @@
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 0.8rem;
             pointer-events: none;
+            display: flex;
+            align-items: center;
         }
+
+        .input-icon i { width: 14px; height: 14px; }
+        .input-icon.origin { color: #3b82f6; }
+        .input-icon.dest { color: #ef4444; }
 
         .route-input {
             width: 100%;
@@ -236,10 +244,15 @@
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 1.1rem;
             opacity: 0.6;
             transition: opacity 0.2s, transform 0.1s;
             z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-location i { width: 14px; height: 14px; }
             padding: 4px;
         }
 
@@ -766,7 +779,7 @@
     <div class="panel">
         <div class="panel-header">
             <div class="panel-header-left">
-                <div class="panel-title">🗺 Live Traffic – Howrah</div>
+                <div class="panel-title"><i data-lucide="map" style="width: 18px; margin-right: 8px;"></i>Live Traffic – Howrah</div>
                 <div class="status-row">
                     <div class="status-dot" id="status-dot"></div>
                     <span class="status-label" id="status-label">Connecting...</span>
@@ -783,21 +796,21 @@
                 </svg>
             </div>
             <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark map"
-                onclick="window.toggleTheme()">☀️</button>
+                onclick="window.toggleTheme()"><i data-lucide="sun" id="theme-toggle-icon"></i></button>
         </div>
 
         <div class="route-form">
-            <button class="btn-swap" id="btn-swap" title="Swap origin and destination" onclick="window.swapLocations()">⇅</button>
+            <button class="btn-swap" id="btn-swap" title="Swap origin and destination" onclick="window.swapLocations()"><i data-lucide="arrow-up-down"></i></button>
             <div class="autocomplete-wrapper input-group">
-                <span class="input-icon">🔵</span>
+                <span class="input-icon origin"><i data-lucide="circle-dot"></i></span>
                 <input class="route-input" id="input-origin" type="text" placeholder="Origin (e.g. Howrah Station)"
                     autocomplete="off">
                 <button class="btn-location" id="btn-location" title="Use current location"
-                    onclick="window.useMyLocation()">📍</button>
+                    onclick="window.useMyLocation()"><i data-lucide="map-pin"></i></button>
                 <div class="autocomplete-dropdown" id="dropdown-origin"></div>
             </div>
             <div class="autocomplete-wrapper input-group">
-                <span class="input-icon">🔴</span>
+                <span class="input-icon dest"><i data-lucide="circle-dot"></i></span>
                 <input class="route-input" id="input-dest" type="text" placeholder="Destination (e.g. Howrah Bridge)"
                     autocomplete="off">
                 <div class="autocomplete-dropdown" id="dropdown-dest"></div>
@@ -831,9 +844,9 @@
             <div class="directions-header">
                 <div class="directions-header-left" onclick="window.toggleDirections()">
                     <span>Directions</span>
-                    <span id="directions-toggle-icon">▲</span>
+                    <span id="directions-toggle-icon-container"><i data-lucide="chevron-up" id="directions-toggle-icon"></i></span>
                 </div>
-                <button class="btn-voice" id="btn-voice" onclick="window.speakDirections(event)" title="Read directions aloud">🔊</button>
+                <button class="btn-voice" id="btn-voice" onclick="window.speakDirections(event)" title="Read directions aloud"><i data-lucide="volume-2"></i></button>
             </div>
             <div class="directions-list" id="directions-list"></div>
         </div>

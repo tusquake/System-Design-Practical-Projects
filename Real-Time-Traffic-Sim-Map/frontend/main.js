@@ -32,7 +32,7 @@ TILES.dark.addTo(map);
 // ─────────────────────────────────────────────
 window.toggleTheme = () => {
     const html = document.documentElement;
-    const btn = document.getElementById('theme-toggle');
+    const btnIcon = document.getElementById('theme-toggle-icon');
     const isLight = currentTheme === 'light';
 
     // Swap tiles
@@ -45,7 +45,8 @@ window.toggleTheme = () => {
 
     // Update HTML theme attribute + button icon
     html.setAttribute('data-theme', currentTheme);
-    btn.textContent = isLight ? '☀️' : '🌙';
+    btnIcon.setAttribute('data-lucide', isLight ? 'sun' : 'moon');
+    lucide.createIcons();
 };
 
 // Add zoom control to bottom-right
@@ -157,10 +158,10 @@ const updateETA = () => {
 };
 
 const maneuverIcons = {
-    'turn': '↪️', 'sharp right': '↪️', 'slight right': '↗️', 'right': '➡️',
-    'sharp left': '↩️', 'slight left': '↖️', 'left': '⬅️', 'straight': '⬆️',
-    'uturn': '🔄', 'roundabout': '🔄', 'arrive': '🏁', 'depart': '🛫',
-    'merge': '🛣️', 'ramp': '🛣️', 'fork': '🍴'
+    'turn': 'corner-up-right', 'sharp right': 'corner-up-right', 'slight right': 'arrow-up-right', 'right': 'arrow-right',
+    'sharp left': 'corner-up-left', 'slight left': 'arrow-up-left', 'left': 'arrow-left', 'straight': 'arrow-up',
+    'uturn': 'refresh-cw', 'roundabout': 'refresh-cw', 'arrive': 'flag', 'depart': 'navigation',
+    'merge': 'merge', 'ramp': 'navigation', 'fork': 'git-branch'
 };
 
 const renderDirections = (steps) => {
@@ -170,7 +171,8 @@ const renderDirections = (steps) => {
     list.innerHTML = steps.map(step => {
         const { type, modifier } = step.maneuver;
         const streetName = step.name || 'the road';
-        const icon = maneuverIcons[modifier] || maneuverIcons[type] || '⬆️';
+        const iconName = maneuverIcons[modifier] || maneuverIcons[type] || 'arrow-up';
+        const icon = `<i data-lucide="${iconName}"></i>`;
 
         let instruction = step.maneuver.instruction;
         if (!instruction) {
@@ -198,14 +200,16 @@ const renderDirections = (steps) => {
     }).join('');
     document.getElementById('directions-panel').classList.add('visible');
     document.getElementById('directions-list').classList.remove('collapsed');
-    document.getElementById('directions-toggle-icon').textContent = '▲';
+    document.getElementById('directions-toggle-icon').setAttribute('data-lucide', 'chevron-up');
+    lucide.createIcons();
 };
 
 window.toggleDirections = () => {
     const list = document.getElementById('directions-list');
     const icon = document.getElementById('directions-toggle-icon');
-    document.getElementById('directions-list').classList.toggle('collapsed');
-    icon.textContent = list.classList.contains('collapsed') ? '▼' : '▲';
+    const isCollapsed = list.classList.toggle('collapsed');
+    icon.setAttribute('data-lucide', isCollapsed ? 'chevron-down' : 'chevron-up');
+    lucide.createIcons();
 };
 
 window.useMyLocation = () => {
@@ -287,7 +291,8 @@ window.speakDirections = (event) => {
     if (synth.speaking || synth.pending) {
         synth.cancel();
         btn.classList.remove('speaking');
-        btn.textContent = '🔊';
+        btn.innerHTML = '<i data-lucide="volume-2"></i>';
+        lucide.createIcons();
         activeUtterance = null;
         return;
     }
@@ -333,19 +338,22 @@ window.speakDirections = (event) => {
 
         activeUtterance.onstart = () => {
             btn.classList.add('speaking');
-            btn.textContent = '🛑';
+            btn.innerHTML = '<i data-lucide="square"></i>';
+            lucide.createIcons();
         };
 
         activeUtterance.onend = () => {
             btn.classList.remove('speaking');
-            btn.textContent = '🔊';
+            btn.innerHTML = '<i data-lucide="volume-2"></i>';
+            lucide.createIcons();
             activeUtterance = null;
         };
 
         activeUtterance.onerror = (e) => {
             console.error('Speech error:', e.error, e);
             btn.classList.remove('speaking');
-            btn.textContent = '🔊';
+            btn.innerHTML = '<i data-lucide="volume-2"></i>';
+            lucide.createIcons();
             activeUtterance = null;
             if (e.error !== 'interrupted') showToast('Voice playback failed');
         };
@@ -369,7 +377,7 @@ const addIncident = (inc) => {
 
     const icon = L.divIcon({
         className: 'incident-marker-container',
-        html: `<div class="incident-marker pulsing">⚠️</div>`,
+        html: `<div class="incident-marker pulsing"><i data-lucide="alert-triangle"></i></div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 12]
     });
@@ -447,12 +455,12 @@ const acState = {
 
 const typeIcon = (type) => {
     const icons = {
-        city: '🏙', town: '🏘', village: '🏡', suburb: '🏘',
-        station: '🚉', railway: '🚉', bus_stop: '🚌', hospital: '🏥',
-        school: '🏫', university: '🎓', restaurant: '🍽', hotel: '🏨',
-        park: '🌳', road: '🛣', street: '🛣', motorway: '🛣', shop: '🛍'
+        city: 'map-pin', town: 'map-pin', village: 'map-pin', suburb: 'map-pin',
+        station: 'train', railway: 'train', bus_stop: 'bus', hospital: 'hospital',
+        school: 'graduation-cap', university: 'graduation-cap', restaurant: 'utensils', hotel: 'bed',
+        park: 'trees', road: 'route', street: 'route', motorway: 'route', shop: 'shopping-bag'
     };
-    return icons[type] || '📍';
+    return `<i data-lucide="${icons[type] || 'map-pin'}"></i>`;
 };
 
 const closeAllDropdowns = () => {
@@ -489,7 +497,7 @@ const renderDropdown = (key, results, isHistory = false) => {
 
     html += results.map((r, i) => `
         <div class="autocomplete-item" data-idx="${i}">
-            <span class="ac-icon">${isHistory ? '🕒' : typeIcon(r.type)}</span>
+            <span class="ac-icon">${isHistory ? '<i data-lucide="history"></i>' : typeIcon(r.type)}</span>
             <div class="ac-text">
                 <div class="ac-name">${r.name}</div>
                 <div class="ac-detail">${r.detail || ''}</div>
@@ -507,6 +515,7 @@ const renderDropdown = (key, results, isHistory = false) => {
 
     dropdown.classList.add('open');
     input.classList.add('has-dropdown');
+    lucide.createIcons();
 };
 
 const highlightItem = (key, idx) => {
@@ -790,4 +799,7 @@ const connectWebSocket = () => {
 // ─────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────
-loadInitialState().then(connectWebSocket);
+loadInitialState().then(() => {
+    connectWebSocket();
+    lucide.createIcons();
+});
