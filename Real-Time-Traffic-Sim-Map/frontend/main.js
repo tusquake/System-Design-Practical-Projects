@@ -55,14 +55,40 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 // State
 // ─────────────────────────────────────────────
 const roadLayers = new Map();  // roadId → Leaflet polyline
-let routeLayer = null;       // Current route polyline on map
+let routeLayer = null;         // Current route polyline on map
 let altRouteLayers = [];
 let originMarker = null;
 let destMarker = null;
 let incidentMarkers = new Map();
-let currentRouteData = null;       // { distance, baseDuration, coords }
+let currentRouteData = null;   // { distance, baseDuration, coords }
 let currentInstructions = [];
-let activeUtterance = null; // Global reference to prevent GC
+let activeUtterance = null;    // Global reference to prevent GC
+
+// ─────────────────────────────────────────────
+// Voice: pre-load voices as soon as the engine
+// is ready (fixes the empty-array race on first call)
+// ─────────────────────────────────────────────
+let cachedVoices = [];
+
+const loadVoices = () => {
+    cachedVoices = window.speechSynthesis.getVoices();
+};
+
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    loadVoices(); // grab synchronously in case Firefox already has them
+}
+
+const pickVoice = () => {
+    const voices = cachedVoices.length ? cachedVoices : window.speechSynthesis.getVoices();
+    return (
+        voices.find(v => v.lang === 'en-US' && v.localService) ||  // prefer local/offline
+        voices.find(v => v.lang.startsWith('en-US')) ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        voices[0] ||
+        null
+    );
+};
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -95,8 +121,6 @@ const formatMin = (seconds) => Math.round(seconds / 60);
 
 // ─────────────────────────────────────────────
 // Traffic congestion score for ETA adjustment
-// We look at the % of roads that are high/medium
-// and multiply the base OSRM duration accordingly
 // ─────────────────────────────────────────────
 const getTrafficMultiplier = () => {
     if (roadLayers.size === 0) return 1.0;
@@ -109,7 +133,6 @@ const getTrafficMultiplier = () => {
     const total = roadLayers.size;
     const highRatio = high / total;
     const medRatio = medium / total;
-    // Multiplier: low=1.0x, mixed medium=up to 1.4x, heavy high=up to 2.0x
     return 1 + highRatio * 1.0 + medRatio * 0.4;
 };
 
@@ -143,12 +166,12 @@ const maneuverIcons = {
 const renderDirections = (steps) => {
     const list = document.getElementById('directions-list');
     currentInstructions = [];
-    
+
     list.innerHTML = steps.map(step => {
         const { type, modifier } = step.maneuver;
         const streetName = step.name || 'the road';
         const icon = maneuverIcons[modifier] || maneuverIcons[type] || '⬆️';
-        
+
         let instruction = step.maneuver.instruction;
         if (!instruction) {
             const modStr = modifier ? ` ${modifier.replace('slight ', 'slight-').replace('sharp ', 'sharp-')}` : '';
@@ -160,7 +183,7 @@ const renderDirections = (steps) => {
             else if (type === 'fork') instruction = `Take the fork${modStr} onto ${streetName}`;
             else instruction = `${type.charAt(0).toUpperCase() + type.slice(1)}${modStr} onto ${streetName}`;
         }
-        
+
         currentInstructions.push(instruction);
 
         return `
@@ -200,7 +223,7 @@ window.useMyLocation = () => {
             const data = await res.json();
             const displayName = data.display_name;
             const shortName = displayName.split(',').slice(0, 2).join(', ');
-            
+
             acState.origin.selected = {
                 lat: latitude,
                 lon: longitude,
@@ -215,7 +238,7 @@ window.useMyLocation = () => {
         } finally {
             btn.textContent = '📍';
         }
-    }, (err) => {
+    }, () => {
         showToast('Location access denied');
         btn.textContent = '📍';
     });
@@ -246,105 +269,117 @@ window.swapLocations = () => {
     }
 };
 
+// ─────────────────────────────────────────────
+// speakDirections — fixed version
+// ─────────────────────────────────────────────
 window.speakDirections = (event) => {
     if (event) event.stopPropagation();
-    const btn = document.getElementById('btn-voice');
-    
-    console.log("Voice button clicked. State:", window.speechSynthesis.speaking ? "Speaking" : "Idle");
 
     if (!('speechSynthesis' in window)) {
-        console.error("Speech Synthesis API not found");
-        showToast('Voice not supported');
+        showToast('Voice not supported in this browser');
         return;
     }
 
-    if (window.speechSynthesis.speaking) {
-        console.log("User requested stop. Cancelling...");
-        window.speechSynthesis.cancel();
+    const btn = document.getElementById('btn-voice');
+    const synth = window.speechSynthesis;
+
+    // ── Toggle OFF ──────────────────────────────
+    if (synth.speaking || synth.pending) {
+        synth.cancel();
         btn.classList.remove('speaking');
         btn.textContent = '🔊';
+        activeUtterance = null;
         return;
     }
-    
+
+    // ── Guard: no directions yet ────────────────
     if (!currentInstructions.length) {
-        showToast('No directions available');
+        showToast('Get directions first');
         return;
     }
-    
-    window.speechSynthesis.cancel();
-    
-    const text = "Route directions. " + currentInstructions.join(". ") + ". End of route.";
-    console.log("Preparing to speak:", text);
-    
-    activeUtterance = new SpeechSynthesisUtterance(text);
-    activeUtterance.volume = 1.0;
-    activeUtterance.rate = 1.0;
-    activeUtterance.pitch = 1.0;
-    
-    const voices = window.speechSynthesis.getVoices();
-    console.log("Total available voices:", voices.length);
-    
-    if (voices.length > 0) {
-        const selectedVoice = voices.find(v => v.lang.includes('en-US')) || 
-                             voices.find(v => v.lang.includes('en')) || 
-                             voices[0];
-        console.log("Selected voice:", selectedVoice.name, "(", selectedVoice.lang, ")");
-        activeUtterance.voice = selectedVoice;
-    }
-    
-    activeUtterance.onstart = () => {
-        console.log("🔊 START: Voice output has begun.");
-        btn.classList.add('speaking');
-        btn.textContent = '🛑';
-    };
 
-    activeUtterance.onboundary = (e) => {
-        console.log(`🗣 Speaking: "${text.substring(e.charIndex, e.charIndex + e.length)}" (index: ${e.charIndex})`);
-    };
-    
-    activeUtterance.onend = () => {
-        console.log("✅ END: Voice output finished.");
-        btn.classList.remove('speaking');
-        btn.textContent = '🔊';
-        activeUtterance = null;
-    };
-    
-    activeUtterance.onerror = (e) => {
-        console.error("❌ ERROR: Speech failed:", e.error, e);
-        btn.classList.remove('speaking');
-        btn.textContent = '🔊';
-        activeUtterance = null;
-        if (e.error !== 'interrupted') showToast('Voice error');
-    };
-    
-    console.log("Executing window.speechSynthesis.speak()...");
-    window.speechSynthesis.speak(activeUtterance);
+    const text = 'Route directions. ' + currentInstructions.join('. ') + '. End of route.';
 
-    if (window.speechSynthesis.paused) {
-        console.log("Engine was paused, forcing resume...");
-        window.speechSynthesis.resume();
-    }
+    // FIX 1: Always cancel any stale/pending speech before starting.
+    //        Even if speaking === false, a queued utterance can silently
+    //        block the new one in Chrome.
+    synth.cancel();
+
+    // FIX 2: Wrap speak() in setTimeout.
+    //        Chrome drops an utterance if speak() is called in the same
+    //        tick as cancel(). The delay lets the cancel flush first.
+    setTimeout(() => {
+        activeUtterance = new SpeechSynthesisUtterance(text);
+        activeUtterance.volume = 1.0;
+        activeUtterance.rate = 0.95;
+        activeUtterance.pitch = 1.0;
+
+        // FIX 3: Use the pre-loaded voice cache instead of calling getVoices()
+        //        at speak-time — on Chromium that call returns [] until
+        //        'voiceschanged' has fired, leaving the utterance voiceless.
+        const voice = pickVoice();
+        if (voice) {
+            activeUtterance.voice = voice;
+            activeUtterance.lang = voice.lang; // keep lang in sync with voice
+            console.log('Selected voice:', voice.name, voice.lang);
+        } else {
+            // FIX 4: If voices still aren't ready, wait and retry once.
+            console.warn('No voices available yet — retrying after voiceschanged');
+            window.speechSynthesis.addEventListener('voiceschanged', () => {
+                window.speakDirections(null);
+            }, { once: true });
+            return;
+        }
+
+        activeUtterance.onstart = () => {
+            btn.classList.add('speaking');
+            btn.textContent = '🛑';
+        };
+
+        activeUtterance.onend = () => {
+            btn.classList.remove('speaking');
+            btn.textContent = '🔊';
+            activeUtterance = null;
+        };
+
+        activeUtterance.onerror = (e) => {
+            console.error('Speech error:', e.error, e);
+            btn.classList.remove('speaking');
+            btn.textContent = '🔊';
+            activeUtterance = null;
+            if (e.error !== 'interrupted') showToast('Voice playback failed');
+        };
+
+        synth.speak(activeUtterance);
+
+        // FIX 5: Chrome can auto-pause speech when it suspects there's no
+        //        user-gesture ancestor (e.g. after an await chain). Force-
+        //        resume after a short delay as a safety net.
+        setTimeout(() => {
+            if (synth.paused) synth.resume();
+        }, 100);
+
+    }, 50); // 50 ms is enough for cancel() to settle
 };
 
 const addIncident = (inc) => {
     if (incidentMarkers.has(inc.id)) return;
-    
+
     showToast(`⚠ ${inc.type}: ${inc.name}`);
-    
+
     const icon = L.divIcon({
         className: 'incident-marker-container',
         html: `<div class="incident-marker pulsing">⚠️</div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 12]
     });
-    
+
     const marker = L.marker([inc.lat, inc.lon], { icon })
         .addTo(map)
         .bindPopup(`<b>${inc.type}</b><br>${inc.name}<br><small>${inc.severity} severity</small>`);
-    
+
     incidentMarkers.set(inc.id, marker);
-    
-    // Auto-remove after 5 minutes
+
     setTimeout(() => {
         if (incidentMarkers.has(inc.id)) {
             map.removeLayer(incidentMarkers.get(inc.id));
@@ -361,7 +396,7 @@ const drawRoad = (road) => {
         color: getTrafficColor(road.congestion),
         weight: 3,
         opacity: 0.75,
-        _congestion: road.congestion, // store for ETA calc
+        _congestion: road.congestion,
     }).addTo(map);
 
     polyline.bindPopup(`<b>${road.name || 'Road'}</b><br>
@@ -376,7 +411,6 @@ const updateRoad = (roadId, congestion) => {
     if (!layer) return;
     layer.setStyle({ color: getTrafficColor(congestion) });
     layer.options._congestion = congestion;
-    // Live-update ETA as traffic changes
     updateETA();
 };
 
@@ -386,18 +420,17 @@ const updateRoad = (roadId, congestion) => {
 const searchNominatim = async (query) => {
     const url = `https://nominatim.openstreetmap.org/search` +
         `?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
-    const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
     const data = await res.json();
     return data.map(d => ({
-        lat:    parseFloat(d.lat),
-        lon:    parseFloat(d.lon),
-        name:   d.display_name.split(',')[0].trim(),
+        lat: parseFloat(d.lat),
+        lon: parseFloat(d.lon),
+        name: d.display_name.split(',')[0].trim(),
         detail: d.display_name.split(',').slice(1, 3).join(',').trim(),
-        type:   d.type || d.class || 'place',
+        type: d.type || d.class || 'place',
     }));
 };
 
-// Geocode fallback when no suggestion is pre-selected
 const geocode = async (query) => {
     const results = await searchNominatim(query);
     if (!results.length) throw new Error(`Could not find "${query}"`);
@@ -409,14 +442,16 @@ const geocode = async (query) => {
 // ─────────────────────────────────────────────
 const acState = {
     origin: { results: [], activeIdx: -1, selected: null },
-    dest:   { results: [], activeIdx: -1, selected: null },
+    dest: { results: [], activeIdx: -1, selected: null },
 };
 
 const typeIcon = (type) => {
-    const icons = { city: '🏙', town: '🏘', village: '🏡', suburb: '🏘',
+    const icons = {
+        city: '🏙', town: '🏘', village: '🏡', suburb: '🏘',
         station: '🚉', railway: '🚉', bus_stop: '🚌', hospital: '🏥',
         school: '🏫', university: '🎓', restaurant: '🍽', hotel: '🏨',
-        park: '🌳', road: '🛣', street: '🛣', motorway: '🛣', shop: '🛍' };
+        park: '🌳', road: '🛣', street: '🛣', motorway: '🛣', shop: '🛍'
+    };
     return icons[type] || '📍';
 };
 
@@ -431,18 +466,15 @@ const closeAllDropdowns = () => {
 const renderHistory = (key) => {
     const history = JSON.parse(localStorage.getItem('traffic_history') || '[]');
     if (!history.length) return;
-    
-    // History contains {origin, dest}. We need to map to the correct field
     const results = history.map(h => h[key]).filter(Boolean);
     if (!results.length) return;
-    
     renderDropdown(key, results, true);
 };
 
 const renderDropdown = (key, results, isHistory = false) => {
     const dropdown = document.getElementById(`dropdown-${key}`);
-    const input    = document.getElementById(`input-${key}`);
-    acState[key].results   = results;
+    const input = document.getElementById(`input-${key}`);
+    acState[key].results = results;
     acState[key].activeIdx = -1;
 
     if (!results.length) {
@@ -451,8 +483,10 @@ const renderDropdown = (key, results, isHistory = false) => {
         return;
     }
 
-    let html = isHistory ? '<div class="ac-loading" style="text-align:left; font-size:0.65rem; padding-bottom:4px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px">Recent Searches</div>' : '';
-    
+    let html = isHistory
+        ? '<div class="ac-loading" style="text-align:left; font-size:0.65rem; padding-bottom:4px; opacity:0.8; text-transform:uppercase; letter-spacing:0.5px">Recent Searches</div>'
+        : '';
+
     html += results.map((r, i) => `
         <div class="autocomplete-item" data-idx="${i}">
             <span class="ac-icon">${isHistory ? '🕒' : typeIcon(r.type)}</span>
@@ -515,7 +549,7 @@ const handleInput = debounce(async (key) => {
 
 const handleKeydown = (key, e) => {
     const state = acState[key];
-    const open  = document.getElementById(`dropdown-${key}`).classList.contains('open');
+    const open = document.getElementById(`dropdown-${key}`).classList.contains('open');
 
     if (e.key === 'Escape') { closeAllDropdowns(); return; }
 
@@ -546,12 +580,11 @@ const handleKeydown = (key, e) => {
     }
 };
 
-// Wire up both inputs
 ['origin', 'dest'].forEach(key => {
     const input = document.getElementById(`input-${key}`);
-    input.addEventListener('input',   ()  => handleInput(key));
+    input.addEventListener('input', () => handleInput(key));
     input.addEventListener('keydown', (e) => handleKeydown(key, e));
-    input.addEventListener('blur',    ()  => setTimeout(() => {
+    input.addEventListener('blur', () => setTimeout(() => {
         document.getElementById(`dropdown-${key}`).classList.remove('open');
         input.classList.remove('has-dropdown');
     }, 150));
@@ -565,12 +598,9 @@ const handleKeydown = (key, e) => {
 const saveToHistory = (origin, dest) => {
     let history = JSON.parse(localStorage.getItem('traffic_history') || '[]');
     const entry = { origin, dest, timestamp: Date.now() };
-    
-    // Deduplicate
     history = history.filter(h => !(h.origin.name === origin.name && h.dest.name === dest.name));
     history.unshift(entry);
     if (history.length > 5) history.pop();
-    
     localStorage.setItem('traffic_history', JSON.stringify(history));
 };
 
@@ -588,12 +618,12 @@ const fetchRoute = async (origin, dest) => {
     const res = await fetch(url);
     const data = await res.json();
     if (data.code !== 'Ok') throw new Error('Routing failed');
-    
+
     return data.routes.map(r => ({
-        distance:     r.distance,
+        distance: r.distance,
         baseDuration: r.duration,
-        coords:       r.geometry.coordinates.map(([lon, lat]) => [lat, lon]),
-        steps:        r.legs[0].steps,
+        coords: r.geometry.coordinates.map(([lon, lat]) => [lat, lon]),
+        steps: r.legs[0].steps,
     }));
 };
 
@@ -608,11 +638,11 @@ const makeIcon = (color) => L.divIcon({
 });
 
 // ─────────────────────────────────────────────
-// Main: Get Route — uses cached selection if available
+// Main: Get Route
 // ─────────────────────────────────────────────
 window.getRoute = async () => {
     const originText = document.getElementById('input-origin').value.trim();
-    const destText   = document.getElementById('input-dest').value.trim();
+    const destText = document.getElementById('input-dest').value.trim();
     if (!originText || !destText) { showToast('Please enter both origin and destination.'); return; }
 
     closeAllDropdowns();
@@ -622,22 +652,20 @@ window.getRoute = async () => {
     btn.innerHTML = '<span class="spinner"></span>Finding route…';
 
     try {
-        // Use pre-selected suggestion coords, or fall back to geocoding
         const origin = acState.origin.selected || await geocode(originText);
-        const dest   = acState.dest.selected   || await geocode(destText);
+        const dest = acState.dest.selected || await geocode(destText);
 
         const routes = await fetchRoute(origin, dest);
         const bestRoute = routes[0];
         currentRouteData = bestRoute;
 
-        if (routeLayer)   { map.removeLayer(routeLayer);   routeLayer   = null; }
+        if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
         altRouteLayers.forEach(l => map.removeLayer(l));
         altRouteLayers = [];
-        
-        if (originMarker) { map.removeLayer(originMarker); originMarker = null; }
-        if (destMarker)   { map.removeLayer(destMarker);   destMarker   = null; }
 
-        // Draw alternatives
+        if (originMarker) { map.removeLayer(originMarker); originMarker = null; }
+        if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
+
         for (let i = 1; i < routes.length; i++) {
             const alt = L.polyline(routes[i].coords, {
                 color: '#94a3b8', weight: 4, opacity: 0.4
@@ -676,14 +704,14 @@ const updateStats = async () => {
     try {
         const res = await fetch('http://localhost:8080/api/traffic/stats');
         const stats = await res.json();
-        
+
         if (stats.score !== undefined) {
             const score = stats.score;
             document.getElementById('stats-score').textContent = `${score}%`;
-            
+
             scoreHistory.push(score);
             if (scoreHistory.length > 20) scoreHistory.shift();
-            
+
             const poly = document.getElementById('sparkline-poly');
             if (poly) {
                 const width = 60;
@@ -696,7 +724,7 @@ const updateStats = async () => {
                     return `${x.toFixed(1)},${y.toFixed(1)}`;
                 }).join(' ');
                 poly.setAttribute('points', points);
-                
+
                 const color = score < 15 ? '#2ecc71' : score < 40 ? '#f1c40f' : '#e74c3c';
                 document.getElementById('stats-widget').style.color = color;
             }
