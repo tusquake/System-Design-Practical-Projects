@@ -20,6 +20,7 @@ A collection of **10 production-grade, distributed system implementations** span
   - [8. Ride-Sharing Geospatial Engine](#8-ride-sharing-geospatial-engine)
   - [9. IoT Telemetry & Analytics Platform](#9-iot-telemetry--analytics-platform)
   - [10. Collaborative Document Editor](#10-collaborative-document-editor)
+  - [11. Real-Time Traffic Simulation & Monitoring Platform](#11-real-time-traffic-simulation--monitoring-platform)
 - [Technology Matrix](#technology-matrix)
 - [Repository Structure](#repository-structure)
 
@@ -281,6 +282,28 @@ WebSockets keep all connected clients synchronized: when one user types, the CRD
 
 ---
 
+### 11. Real-Time Traffic Simulation & Monitoring Platform
+
+**Directory:** [`./Real-Time-Traffic-Sim-Map`](./Real-Time-Traffic-Sim-Map)
+
+**Tech Stack:** Spring Boot, Redis Pub/Sub, Python, OSRM, Web Speech API, Leaflet.js
+
+#### What It Does
+
+A high-performance geospatial system that simulates real-world urban traffic patterns and live incidents. It provides a real-time reactive dashboard for city-wide congestion monitoring, dynamic routing with traffic-aware ETAs, and narrated turn-by-turn navigation.
+
+#### Core Architecture
+
+The system is built on a reactive event-driven model. A Python-based traffic engine simulates road congestion and publishes updates to Redis. A Spring Boot backend subscribes to these channels and bridges the data to a Leaflet.js frontend via STOMP WebSockets. This ensures that the map reflects city-wide traffic changes (colors, speeds, incidents) with sub-millisecond latency.
+
+#### Key Design Decisions
+
+- **Why Redis Pub/Sub for traffic?** Traffic updates are high-frequency and transient. Pub/Sub provides the lowest possible latency for broadcasting thousands of road state updates per second to all connected dashboards without the overhead of disk persistence.
+- **Why OSRM for routing?** The Open Source Routing Machine (OSRM) provides a professional-grade routing engine. We enhanced it with a custom traffic-multiplier logic on the frontend to adjust ETAs dynamically as congestion levels change in real-time.
+- **Robust Voice Guidance:** To overcome browser-specific limitations in the Web Speech API (like silent engine pauses or garbage collection of long narrations), we implemented a watchdog timer and global state management for the `SpeechSynthesis` engine.
+
+---
+
 ## Technology Matrix
 
 | System | Database | Messaging | Protocol | Key Algorithm |
@@ -295,6 +318,7 @@ WebSockets keep all connected clients synchronized: when one user types, the CRD
 | Geospatial Engine | Redis GEO | — | WebSocket (STOMP) | Geohash |
 | IoT Platform | Cassandra | GCP Pub/Sub + Dataflow | MQTT / HTTP | LSM-Tree |
 | Doc Editor | Redis | — | WebSocket (STOMP) | CRDT (Yjs) |
+| Traffic Sim | Redis Pub/Sub | — | WebSocket (STOMP) | Dijkstra / Rush-Hour Weighting |
 
 ---
 
@@ -325,3 +349,4 @@ Each project directory contains:
 - [Ride-Sharing Geospatial System](./Ride-Sharing-Geospatial-System)
 - [IoT Telemetry Platform](./IoT-GCP-Cassandra-Telemetry)
 - [Collaborative Document Editor](./Collaborative-Doc-Editor)
+- [Real-Time Traffic Sim & Map](./Real-Time-Traffic-Sim-Map)
