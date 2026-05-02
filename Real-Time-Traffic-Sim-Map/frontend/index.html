@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Traffic Map – Howrah</title>
+    <meta name="description" content="Real-time traffic simulation and routing for Howrah, India">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ── CSS Variables: Dark & Light themes ── */
+        :root,
+        [data-theme="dark"] {
+            --bg-body: #0f0f0f;
+            --panel-bg: rgba(18, 18, 24, 0.92);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --panel-divider: rgba(255, 255, 255, 0.07);
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #555555;
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.10);
+            --input-focus-border: rgba(99, 179, 237, 0.5);
+            --input-focus-bg: rgba(255, 255, 255, 0.09);
+            --stat-bg: rgba(255, 255, 255, 0.05);
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            --toggle-bg: rgba(255, 255, 255, 0.08);
+            --toggle-icon: '☀️';
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f0f2f5;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --panel-border: rgba(0, 0, 0, 0.08);
+            --panel-divider: rgba(0, 0, 0, 0.07);
+            --text-primary: #1a1a2e;
+            --text-secondary: #555555;
+            --text-muted: #999999;
+            --input-bg: rgba(0, 0, 0, 0.04);
+            --input-border: rgba(0, 0, 0, 0.12);
+            --input-focus-border: rgba(59, 130, 246, 0.5);
+            --input-focus-bg: rgba(0, 0, 0, 0.06);
+            --stat-bg: rgba(0, 0, 0, 0.04);
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            --toggle-bg: rgba(0, 0, 0, 0.06);
+            --toggle-icon: '🌙';
+        }
+
+        body,
+        html {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            overflow: hidden;
+            transition: background 0.3s;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* ── Side Panel ── */
+        .panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            width: 320px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .panel-header {
+            padding: 16px 20px 14px;
+            border-bottom: 1px solid var(--panel-divider);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .panel-header-left {
+            flex: 1;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: var(--text-primary);
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+            transition: background 0.4s;
+            flex-shrink: 0;
+        }
+
+        .status-dot.online {
+            background: #2ecc71;
+            box-shadow: 0 0 6px #2ecc71;
+        }
+
+        .status-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .status-label.online {
+            color: #2ecc71;
+        }
+
+        /* ── Theme Toggle Button ── */
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--panel-border);
+            background: var(--toggle-bg);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.2s, border-color 0.3s;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* ── Route Search ── */
+        .route-form {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--panel-divider);
+            position: relative;
+        }
+
+        .btn-swap {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-divider);
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1rem;
+        }
+        .btn-swap:hover {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+            transform: translateY(-50%) rotate(180deg);
+        }
+        .btn-swap:active { transform: translateY(-50%) scale(0.9); }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        .route-input {
+            width: 100%;
+            padding: 10px 12px 10px 34px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .route-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-location {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            opacity: 0.6;
+            transition: opacity 0.2s, transform 0.1s;
+            z-index: 5;
+            padding: 4px;
+        }
+
+        .btn-location:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .btn-location:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+
+        #input-origin {
+            padding-right: 40px;
+        }
+
+        .route-input:focus {
+            border-color: var(--input-focus-border);
+            background: var(--input-focus-bg);
+        }
+
+        /* Input with open dropdown gets flat bottom */
+        .route-input.has-dropdown {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom-color: transparent;
+        }
+
+        /* ── Autocomplete Dropdown ── */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--panel-bg);
+            border: 1px solid var(--input-focus-border);
+            border-top: none;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            overflow: hidden;
+            z-index: 9999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .autocomplete-dropdown.open {
+            display: block;
+        }
+
+        .autocomplete-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 9px 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--panel-divider);
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background: rgba(59, 130, 246, 0.12);
+        }
+
+        .ac-icon {
+            font-size: 0.75rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .ac-text {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .ac-name {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ac-detail {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .ac-loading {
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .btn-route {
+            width: 100%;
+            padding: 11px;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            margin-top: 4px;
+        }
+
+        .btn-route:hover {
+            opacity: 0.9;
+        }
+
+        .btn-route:active {
+            transform: scale(0.98);
+        }
+
+        .btn-route:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ── ETA Card ── */
+        .eta-card {
+            padding: 16px 20px;
+            display: none;
+            border-bottom: 1px solid var(--panel-divider);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .eta-card.visible {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .eta-main {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .eta-time {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .eta-unit {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .eta-traffic-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-left: auto;
+        }
+
+        .badge-low {
+            background: rgba(46, 204, 113, 0.15);
+            color: #27ae60;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .badge-medium {
+            background: rgba(241, 196, 15, 0.15);
+            color: #d4ac0d;
+            border: 1px solid rgba(241, 196, 15, 0.3);
+        }
+
+        .badge-high {
+            background: rgba(231, 76, 60, 0.15);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .eta-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        .eta-stat {
+            background: var(--stat-bg);
+            border-radius: 8px;
+            padding: 8px 10px;
+            text-align: center;
+            transition: background 0.3s;
+        }
+
+        .stat-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Directions ── */
+        .directions-panel {
+            background: var(--panel-bg);
+            border-top: 1px solid var(--panel-divider);
+            display: none;
+            flex-direction: column;
+            max-height: 300px;
+        }
+
+        .directions-panel.visible {
+            display: flex;
+        }
+
+        .directions-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--panel-divider);
+        }
+
+        .directions-header-left {
+            flex: 1;
+            padding: 12px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .directions-header-left:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .btn-voice {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px 15px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-voice:hover {
+            color: var(--accent-primary);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .btn-voice.speaking {
+            color: var(--accent-primary);
+            animation: pulse-voice 1.5s infinite;
+        }
+
+        @keyframes pulse-voice {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ── Stats Widget ── */
+        .stats-widget {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin: 0 10px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .stats-main {
+            text-align: right;
+        }
+
+        .stats-score {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .stats-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 3px;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-sparkline {
+            width: 50px;
+            height: 18px;
+            color: #3b82f6;
+            overflow: visible;
+        }
+
+        .directions-list {
+            overflow-y: auto;
+            padding: 0 10px 10px 10px;
+        }
+
+        .directions-list.collapsed {
+            display: none;
+        }
+
+        .direction-step {
+            display: flex;
+            gap: 12px;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--panel-divider);
+            transition: background 0.2s;
+        }
+
+        .direction-step:last-child {
+            border-bottom: none;
+        }
+
+        .direction-step:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .step-icon {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .step-info {
+            flex: 1;
+        }
+
+        .step-text {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .step-dist {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ── Incidents ── */
+        .incident-marker {
+            font-size: 1.2rem;
+            cursor: pointer;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .pulsing {
+            animation: pulse-red 2s infinite;
+            border-radius: 50%;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 0.8;
+            }
+        }
+
+        /* ── Legend ── */
+        .legend {
+            padding: 14px 20px;
+        }
+
+        .legend-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-line {
+            width: 28px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .ll-low {
+            background: #2ecc71;
+        }
+
+        .ll-medium {
+            background: #f1c40f;
+        }
+
+        .ll-high {
+            background: #e74c3c;
+        }
+
+        .ll-route {
+            background: linear-gradient(90deg, #3b82f6, #6366f1);
+        }
+
+        /* ── Spinner ── */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(231, 76, 60, 0.92);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 2000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-header-left">
+                <div class="panel-title">🗺 Live Traffic – Howrah</div>
+                <div class="status-row">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span class="status-label" id="status-label">Connecting...</span>
+                </div>
+            </div>
+            <div class="stats-widget" id="stats-widget">
+                <div class="stats-main">
+                    <div class="stats-score" id="stats-score">--</div>
+                    <div class="stats-label">Congestion</div>
+                </div>
+                <svg class="stats-sparkline" viewBox="0 0 60 20">
+                    <polyline fill="none" stroke="currentColor" stroke-width="2" points="0,20 60,20"
+                        id="sparkline-poly" />
+                </svg>
+            </div>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark map"
+                onclick="window.toggleTheme()">☀️</button>
+        </div>
+
+        <div class="route-form">
+            <button class="btn-swap" id="btn-swap" title="Swap origin and destination" onclick="window.swapLocations()">⇅</button>
+            <div class="autocomplete-wrapper input-group">
+                <span class="input-icon">🔵</span>
+                <input class="route-input" id="input-origin" type="text" placeholder="Origin (e.g. Howrah Station)"
+                    autocomplete="off">
+                <button class="btn-location" id="btn-location" title="Use current location"
+                    onclick="window.useMyLocation()">📍</button>
+                <div class="autocomplete-dropdown" id="dropdown-origin"></div>
+            </div>
+            <div class="autocomplete-wrapper input-group">
+                <span class="input-icon">🔴</span>
+                <input class="route-input" id="input-dest" type="text" placeholder="Destination (e.g. Howrah Bridge)"
+                    autocomplete="off">
+                <div class="autocomplete-dropdown" id="dropdown-dest"></div>
+            </div>
+            <button class="btn-route" id="btn-route" onclick="window.getRoute()">Get Directions</button>
+        </div>
+
+        <div class="eta-card" id="eta-card">
+            <div class="eta-main">
+                <div class="eta-time" id="eta-time">--</div>
+                <div class="eta-unit">min</div>
+                <div class="eta-traffic-badge" id="eta-badge">--</div>
+            </div>
+            <div class="eta-stats">
+                <div class="eta-stat">
+                    <div class="stat-value" id="stat-dist">--</div>
+                    <div class="stat-label">Distance</div>
+                </div>
+                <div class="eta-stat">
+                    <div class="stat-value" id="stat-base">--</div>
+                    <div class="stat-label">Base ETA</div>
+                </div>
+                <div class="eta-stat">
+                    <div class="stat-value" id="stat-delay">--</div>
+                    <div class="stat-label">Delay</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="directions-panel" id="directions-panel">
+            <div class="directions-header">
+                <div class="directions-header-left" onclick="window.toggleDirections()">
+                    <span>Directions</span>
+                    <span id="directions-toggle-icon">▲</span>
+                </div>
+                <button class="btn-voice" id="btn-voice" onclick="window.speakDirections(event)" title="Read directions aloud">🔊</button>
+            </div>
+            <div class="directions-list" id="directions-list"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title">Traffic Conditions</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-line ll-low"></div> Low – Smooth flow
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line ll-medium"></div> Moderate – Slow down
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line ll-high"></div> Heavy – Congested
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line ll-route"></div> Your route
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="/main.js"></script>
+</body>
+
+</html>

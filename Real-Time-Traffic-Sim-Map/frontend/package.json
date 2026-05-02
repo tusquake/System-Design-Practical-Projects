@@ -1,0 +1,18 @@
+{
+  "name": "traffic-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "vite": "^5.2.10"
+  }
+}
