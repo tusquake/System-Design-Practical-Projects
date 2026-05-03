@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-gamer-dark text-white font-sans antialiased;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.glass-card {
+  @apply bg-gamer-card border border-white/10 rounded-xl backdrop-blur-md;
+}
+
+.neon-border {
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+}

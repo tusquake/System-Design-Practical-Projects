@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+      - "8001:8001" # RedisInsight GUI
+    environment:
+      - REDIS_ARGS=--notify-keyspace-events KEA
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=vortex
+      - POSTGRES_PASSWORD=vortex_pass
+      - POSTGRES_DB=vortex_db
+    ports:
+      - "5432:5432"
