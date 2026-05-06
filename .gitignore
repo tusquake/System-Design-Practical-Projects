@@ -12,3 +12,10 @@
 target/
 bin/
 out/
+node_modules/
+dist/
+build/
+.mvn/
+*.jar
+*.class
+.DS_Store

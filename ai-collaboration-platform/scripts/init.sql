@@ -1,0 +1,3 @@
+CREATE DATABASE auth_db;
+CREATE DATABASE chat_db;
+CREATE DATABASE scheduler_db;

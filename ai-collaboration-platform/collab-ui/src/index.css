@@ -1,0 +1,84 @@
+:root {
+  --primary: #5b5fc7;
+  --primary-hover: #4e52b1;
+  --bg-app: #11100f;
+  --bg-sidebar: #201f1e;
+  --bg-chat: #1b1a19;
+  --bg-card: #292827;
+  --text-main: #ffffff;
+  --text-secondary: #adadad;
+  --border: #323130;
+  --accent: #6165d7;
+  --success: #6bb700;
+  --error: #f35325;
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  overflow: hidden;
+  height: 100vh;
+}
+
+#root {
+  height: 100%;
+}
+
+.app-container {
+  display: flex;
+  height: 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #484644;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #605e5c;
+}
+
+/* Utility Classes */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.p-4 { padding: 1rem; }
+.m-2 { margin: 0.5rem; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--primary);
+}

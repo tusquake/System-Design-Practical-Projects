@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/v1/auth/**
+        
+        - id: chat-service
+          uri: http://chat-service:8082
+          predicates:
+            - Path=/api/v1/chat/**
+        
+        - id: chat-ws
+          uri: ws://chat-service:8082
+          predicates:
+            - Path=/ws-chat/**
+
+        - id: ai-service
+          uri: http://ai-service:8000
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - RewritePath=/api/v1/ai/(?<segment>.*), /$\{segment}
+
+        - id: scheduler-service
+          uri: http://scheduler-service:8083
+          predicates:
+            - Path=/api/v1/scheduler/**
+
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
