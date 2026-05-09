@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+redis
+websockets
+sqlalchemy
+asyncpg
+psycopg2-binary
+pydantic

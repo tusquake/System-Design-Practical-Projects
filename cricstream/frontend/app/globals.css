@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', sans-serif;
+}
+
+@layer components {
+  .card-premium {
+    @apply bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl shadow-xl transition-all duration-300 hover:border-slate-500/50;
+  }
+  
+  .badge {
+    @apply px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+}
+
+.live-dot {
+  @apply h-2 w-2 rounded-full bg-red-500 animate-pulse inline-block mr-2;
+}
+
+.scrolling-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrolling-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrolling-list::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}

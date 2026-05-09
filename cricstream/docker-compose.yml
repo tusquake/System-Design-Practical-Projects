@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: cricstream-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: cricstream
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d cricstream"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cricstream-network
+
+
+  redis:
+    image: redis:alpine
+    container_name: cricstream-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - cricstream-network
+
+  backend:
+    build: ./backend
+    container_name: cricstream-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://user:password@db:5432/cricstream
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+    networks:
+      - cricstream-network
+
+  simulator:
+    build: ./simulator
+    container_name: cricstream-simulator
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      - backend
+    networks:
+      - cricstream-network
+
+networks:
+  cricstream-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
