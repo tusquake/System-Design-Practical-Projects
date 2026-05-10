@@ -2,7 +2,7 @@
 
 > *"Design is not just what it looks like and feels like. Design is how it works."* — Steve Jobs
 
-A collection of **10 production-grade, distributed system implementations** spanning graph databases, real-time messaging, geospatial engines, and collaborative computing. Each project mirrors the architectural decisions made at scale in real-world engineering organizations — not toy examples, but systems designed to handle real load, real failure modes, and real trade-offs.
+A collection of **14 production-grade, distributed system implementations** spanning graph databases, real-time messaging, geospatial engines, and collaborative computing. Each project mirrors the architectural decisions made at scale in real-world engineering organizations — not toy examples, but systems designed to handle real load, real failure modes, and real trade-offs.
 
 ---
 
@@ -21,6 +21,9 @@ A collection of **10 production-grade, distributed system implementations** span
   - [9. IoT Telemetry & Analytics Platform](#9-iot-telemetry--analytics-platform)
   - [10. Collaborative Document Editor](#10-collaborative-document-editor)
   - [11. Real-Time Traffic Simulation & Monitoring Platform](#11-real-time-traffic-simulation--monitoring-platform)
+  - [12. Vortex Gaming Platform](#12-vortex-gaming-platform)
+  - [13. AI Collaboration Platform](#13-ai-collaboration-platform)
+  - [14. CricStream: Real-Time Cricket Scoreboard](#14-cricstream-real-time-cricket-scoreboard)
 - [Technology Matrix](#technology-matrix)
 - [Repository Structure](#repository-structure)
 
@@ -304,6 +307,70 @@ The system is built on a reactive event-driven model. A Python-based traffic eng
 
 ---
 
+### 12. Vortex Gaming Platform
+
+**Directory:** [`./Vortex-Gaming-Platform`](./Vortex-Gaming-Platform)
+
+**Tech Stack:** Redis (Bitmaps, Sorted Sets, Redlock, HyperLogLog, Streams), Docker
+
+#### What It Does
+
+A high-concurrency gaming engagement platform utilizing advanced Redis data structures. It tracks live leaderboard rankings, daily active user streaks, distributed locks for matchmaking, and global unique player counts.
+
+#### Core Architecture
+
+Instead of using a traditional relational database, the core loop is powered entirely by specialized Redis modules to achieve single-digit millisecond latency under high write contention.
+
+#### Key Design Decisions
+
+- **Bitmaps for Streaks:** Tracks user logins using 1 bit per day, saving enormous memory space while enabling fast bitwise operations for streak calculation.
+- **Redlock for Matchmaking:** Prevents race conditions during multiplayer game session creation using distributed locks.
+- **HyperLogLog for Unique Viewers:** Approximates large cardinality counts with minimal memory footprint.
+
+---
+
+### 13. AI Collaboration Platform
+
+**Directory:** [`./ai-collaboration-platform`](./ai-collaboration-platform)
+
+**Tech Stack:** Spring Boot, Kafka, WebSockets, Groq AI, React
+
+#### What It Does
+
+A microservices-based collaboration suite combining real-time chat, AI assistant integration, and scheduled notifications.
+
+#### Core Architecture
+
+The system uses an API Gateway to route traffic to underlying domain services (Chat, AI, Auth, Notification). Apache Kafka acts as the event backbone to decouple async operations (like sending notifications).
+
+#### Key Design Decisions
+
+- **Event-Driven Microservices:** De-coupled architecture using Kafka prevents the Chat service from stalling if the AI service takes time to generate a response.
+- **Gateway Pattern:** Centralized authentication and rate limiting at the edge layer.
+
+---
+
+### 14. CricStream: Real-Time Cricket Scoreboard
+
+**Directory:** [`./cricstream`](./cricstream)
+
+**Tech Stack:** Python, FastAPI, Redis Pub/Sub, Next.js, Web Speech API, Docker Swarm
+
+#### What It Does
+
+A high-performance live broadcasting platform that generates live match simulations, dual-language AI commentary (via Groq/Llama-3), and delivers sub-second scorecard updates to thousands of users.
+
+#### Core Architecture
+
+A Python simulator pushes events to a FastAPI backend, which durably writes them to PostgreSQL (CQRS Command) and simultaneously publishes them to Redis. A horizontally scaled WebSocket fleet subscribes to Redis and pushes to clients (CQRS Query).
+
+#### Key Design Decisions
+
+- **Observer Pattern:** Redis Pub/Sub fans out events, ensuring the backend logic only runs once regardless of connected users.
+- **Client-Side Offloading:** Heavy processing like charting (`recharts`) and text-to-speech audio synthesis runs strictly on the client browser, freeing up backend CPU for max concurrency.
+
+---
+
 ## Technology Matrix
 
 | System | Database | Messaging | Protocol | Key Algorithm |
@@ -319,6 +386,9 @@ The system is built on a reactive event-driven model. A Python-based traffic eng
 | IoT Platform | Cassandra | GCP Pub/Sub + Dataflow | MQTT / HTTP | LSM-Tree |
 | Doc Editor | Redis | — | WebSocket (STOMP) | CRDT (Yjs) |
 | Traffic Sim | Redis Pub/Sub | — | WebSocket (STOMP) | Dijkstra / Rush-Hour Weighting |
+| Vortex Platform | Redis (Adv Data) | Redis Streams | REST | Bitmaps, Redlock |
+| AI Collab | PostgreSQL | Kafka | REST / WS | Microservices Event-Driven |
+| CricStream | PostgreSQL | Redis Pub/Sub | WebSocket | CQRS, Observer Pattern |
 
 ---
 
@@ -350,3 +420,6 @@ Each project directory contains:
 - [IoT Telemetry Platform](./IoT-GCP-Cassandra-Telemetry)
 - [Collaborative Document Editor](./Collaborative-Doc-Editor)
 - [Real-Time Traffic Sim & Map](./Real-Time-Traffic-Sim-Map)
+- [Vortex Gaming Platform](./Vortex-Gaming-Platform)
+- [AI Collaboration Platform](./ai-collaboration-platform)
+- [CricStream: Real-Time Scoreboard](./cricstream)
